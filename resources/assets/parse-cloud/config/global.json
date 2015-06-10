@@ -1,0 +1,14 @@
+{
+    "applications": {
+        "EasyDock": {
+            "applicationId": "tAYSHd0fPPpN5cAVL9xFcg9JCECPHE2dPKrWDRWZ", 
+            "masterKey": "Q55BY6hg5dwcilfmg9rBN3JwIcLTbaGaFMwieNAn"
+        }, 
+        "_default": {
+            "link": "EasyDock"
+        }
+    }, 
+    "global": {
+        "parseVersion": "1.3.5"
+    }
+}
