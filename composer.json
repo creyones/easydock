@@ -14,7 +14,8 @@
 		"kartik-v/bootstrap-fileinput": "dev-master",
 		"datatables/datatables": "dev-master",
 		"components/font-awesome": "dev-master",
-		"intervention/image": "~2.1"
+		"intervention/image": "~2.1",
+		"guzzlehttp/guzzle": "~5.0"
 	},
 	"require-dev": {
 		"phpunit/phpunit": "~4.0",

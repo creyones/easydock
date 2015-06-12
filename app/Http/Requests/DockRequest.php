@@ -27,7 +27,7 @@ class DockRequest extends Request {
 			//
 			'name' => 'required|min:8|max:40',
 			'details' => 'required|min:20|max:300',
-			'code' => 'required|min:6|max:40'
+			'code' => 'required|min:6|max:40',
 			'image' => 'required',
 			'from' => 'required',
 			'until' => 'required',

@@ -93,7 +93,6 @@ class DocksController extends Controller {
 			return view('docks.show', compact('dock', 'port', 'provider', 'bookings', 'products'));
 		}
 		else if($current_user->hasRole('admin'))
-		else
 		{
 			return view('docks.show');
 		}

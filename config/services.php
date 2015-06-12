@@ -20,7 +20,7 @@ return [
 	],
 
 	'mandrill' => [
-		'secret' => '',
+		'secret' => 'PUvh_jdztJvZHlkRBv2Smg',
 	],
 
 	'ses' => [

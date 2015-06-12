@@ -27,7 +27,7 @@
 			<div class="row">
 				<div class="col-xs-8 col-xs-offset-2 col-sm-6 col-sm-offset-3 col-md-4 col-md-offset-4">
 					<div class="box">
-						<p class="lead"><img class="img-responsive" src="img/logo.png" alt="easyDock"/></p>
+						<p class="lead"><img class="img-responsive" src="img/logo-text.png" alt="easyDock"/></p>
 						<a class="btn btn-block btn-success" href="home">{{trans('actions.login')}}</a>
 					</div>
 				</div>

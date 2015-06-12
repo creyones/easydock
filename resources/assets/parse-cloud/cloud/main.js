@@ -1,19 +1,31 @@
 
-// Use Parse.Cloud.define to define as many cloud functions as you want.
-// For example:
-Parse.Cloud.define('deleteUser', function(request, response) {
-  Parse.Cloud.useMasterKey();
-  var query = new Parse.Query(Parse.User);
-  query.equalTo("objectId", request.params.objectId);
-  query.find({
-    success: function(results) {
-      results[0].destroy();
-      console.log("User deleted");
-      response.success("User has been succesfully deleted");
+// function to send emails via Mandrill
+Parse.Cloud.define("sendMail", function(request, response) {
+  var Mandrill = require('mandrill');
+  Mandrill.initialize('PUvh_jdztJvZHlkRBv2Smg');
+
+  Mandrill.sendEmail({
+    message: {
+      text: request.params.text,
+      subject: request.params.subject,
+      from_email: request.params.fromEmail,
+      from_name: request.params.fromName,
+      to: [
+        {
+          email: request.params.toEmail,
+          name: request.params.toName
+        }
+      ]
     },
-    error: function() {
-      console.error("User not deleted");
-      response.error("User not deleted");
+    async: true
+  },{
+    success: function(httpResponse) {
+      console.log(httpResponse);
+      response.success("Email sent!");
+    },
+    error: function(httpResponse) {
+      console.error(httpResponse);
+      response.error("Uh oh, something went wrong");
     }
   });
 });

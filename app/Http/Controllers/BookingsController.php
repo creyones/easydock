@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Log;
 
 use Parse\ParseClient;
@@ -265,8 +266,9 @@ class BookingsController extends Controller {
 					$this->confirmProducts($booking, false);
 				}
 
+				//Notify user
+				$this->notify($booking, 'update', 'user');
 
-				//TODO send notification
 				$modified = true;
 			}
 
@@ -280,6 +282,8 @@ class BookingsController extends Controller {
 				//Update Booking in Parse
 				if ($modified) {
 					$booking->save();
+					//Notify provider
+
 				}
 				else {
 					return redirect()->back()->withErrors(trans('validation.custom.not-modified'));
@@ -439,6 +443,67 @@ class BookingsController extends Controller {
 			$product->save();
 		}
 
+	}
+
+	private function notify($booking, $action, $recipient = 'user') {
+
+		$to = '';
+		$title = '';
+		$intro = '';
+		$text = '';
+		$url = '';
+
+		$user = $booking->get('userRelation')->getQuery()->find()[0];
+		$dock = $booking->get('atraqueRelation')->getQuery()->find()[0];
+		$provider = $dock->get('vendedorRelation')->getQuery()->find()[0];
+
+		$id = $booking->getObjectId();
+
+		if ($action === 'store') {
+
+			$title = trans('emails.new-booking');
+			$intro = trans('emails.new-booking-intro');
+			$text = trans('emails.new-booking-text');
+			$to = $provider->get('email');
+
+		}
+		else if ($action === 'update') {
+
+			$title = trans('emails.update-booking');
+			$intro = trans('emails.update-booking-intro');
+			$text = trans('emails.update-booking-text');
+
+			if ($recipient === 'user') {
+				$to = $user->get('email');
+			}
+			else {
+				$to = $provider->get('email');
+			}
+
+		}
+		elseif ($action === 'cancel') {
+
+		}
+		elseif ($action === 'delete') {
+
+		}
+
+		$data = ['to' => $to,
+						'from' => 'no-reply@easydockapp.com',
+						'action' => $title,
+						'intro' => $intro,
+						'text' => $text,
+						'id' => $id,
+						'url' => $url
+						];
+
+		//dd($data);
+
+		Mail::queue('emails.booking', $data, function($message)
+		{
+			$message->from('no-reply@easydockapp.com', 'EasyDock');
+			$message->to('jballesteros@adelaapp.com')->subject('Booking Updated!');;
+		});
 	}
 
 }
