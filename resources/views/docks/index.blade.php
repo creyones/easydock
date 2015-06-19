@@ -9,10 +9,13 @@
 		<div class="col-sm-9 col-md-10">
 			@include('partials.flash')
 			<!-- Main Content -->
+			@if (Auth::user()->hasRole('owner') || Auth::user()->hasRole('admin') || Auth::user()->hasRole('provider'))
 			<div class="row">
-				@if (Auth::user()->hasRole('owner') || Auth::user()->hasRole('admin'))
 				<div class="col-sm-12">
-					<p class="lead"><i class="fa fa-anchor fa-2x"></i> <span class="text-success"> {{count($docks)}} </span> {{trans('models.docks')}} <a class="btn btn-default pull-right" href={{route('docks.create')}}>{{trans('views.create_dock')}}</a></p>
+					<p class="lead">
+						<i class="fa fa-anchor fa-2x"></i> <span class="text-success"> {{count($docks)}} </span> {{trans('models.docks')}}
+						<a class="btn btn-default pull-right" href={{route('docks.create')}}>{{trans('views.create_dock')}}</a>
+					</p>
 				</div>
 				<div class="col-sm-12">
 					<table id="data-table" class="table table-striped table-hover ">

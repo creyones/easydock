@@ -13,17 +13,17 @@ return [
 	|
 	*/
 	'user' => [
-		'new-booking' => 'New Booking!!!',
-		'new-booking-intro' => 'You have requested a new booking on a dock with the following details.',
-		'new-booking-text' => 'The owner/manager of the dock will contact you soon giving you details on how to proceed with the payment.',
-		'update-booking' => 'Booking Updated',
-		'update-booking-intro' => 'A booking you requested has been updated by the owner/manager.',
-		'update-booking-text' => 'Please check in the app that you agree with the changes made to reservation. If you do not agree, please get in contact with the dock owner/manager.',
+		'new-booking' => 'Nueva reserva!!!',
+		'new-booking-intro' => 'Has realizado una reserva de atraque con las siguientes características.',
+    'new-booking-text' => 'En breve recibirás una comunicación por parte del propietario/gestor del atraque con las instrucciones para realizar el pago.',
+		'update-booking' => 'Reserva Actualizada',
+		'update-booking-intro' => 'La reserva que habías realizado ha sido actualizada por el propietario/gestor del atraque.',
+		'update-booking-text' => 'Por favor comprueba los cambios realizados en la reserva en la app de EasyDock. Si tienes alguna duda, por favor ponte en contacto con el propietario/gestor del atraque.',
 	],
 	'provider' => [
-		'new-booking' => 'New Booking!!!',
-		'new-booking-intro' => 'A new booking has been requested in a dock you manage. Please get in contact with the client, giving details on how to proceed with the payment.',
-		'new-booking-text' => 'To proceed with further actions on the booking, click in the following button.',
+		'new-booking' => 'Nueva reserva!!!',
+		'new-booking-intro' => 'Se ha solicitado una reserva en un atraque. To proceed click in the following button.',
+    'new-booking-text' => 'En breve recibirás una comunicación por parte del propietario/gestor del atraque con las instrucciones para realizar el pago.',
 		'update-booking-intro' => 'A booking in a dock you own/manage has been updated.',
 		'update-booking-text' => 'Please check that you agree with the changes made to reservation by clicking the following button.',
 		'new-dock' => 'New Dock!!!',

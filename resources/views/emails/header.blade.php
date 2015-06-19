@@ -1,5 +1,5 @@
 <head>
-<title>Salted | A Responsive Email Template</title>
+<title>EasyDock | Book the dock you need wherever you are</title>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width">
 <style type="text/css">

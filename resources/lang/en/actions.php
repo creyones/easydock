@@ -20,6 +20,7 @@ return [
 	'edit' => 'Edit',
 	'add' => 'Add',
 	'back' => 'Back',
+	'contact' => 'Contact',
 	'login' => 'Login',
 	'logout' => 'Logout',
 

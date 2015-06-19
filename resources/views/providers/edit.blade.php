@@ -44,13 +44,20 @@
 							{!! Form::email('email', $provider->get('email'), ['class'=>'form-control']) !!}
 						</div>
 					</div>
+					<hr/>
 					<div class="form-group">
-						{!!Form::Label('password', trans('models.fields.password'), ['class'=>'col-sm-2 control-label']) !!}
+						{!!Form::Label('port', trans('models.port'), ['class'=>'col-sm-2 control-label']) !!}
 						<div class="col-sm-8">
-							{!! Form::text('password', $provider->get('password'), ['class'=>'form-control']) !!}
+							{!! Form::select('port', $ports, ($port ? $port->get('name') : null), ['class'=>'form-control']) !!}
 						</div>
 					</div>
 					@if ($profile)
+					<div class="form-group">
+						{!!Form::Label('role', trans('models.role'), ['class'=>'col-sm-2 control-label']) !!}
+						<div class="col-sm-8">
+							{!! Form::select('role', $roles, $profile->roles()->first()->name, ['class'=>'form-control']) !!}
+						</div>
+					</div>
 					<hr/>
 					<div class="form-group">
 						{!!Form::Label('firstname', trans('models.fields.firstname'), ['class'=>'col-sm-2 control-label']) !!}

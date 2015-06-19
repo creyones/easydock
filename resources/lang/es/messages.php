@@ -40,5 +40,6 @@ return [
 	'no' => 'No',
 	'true' => 'Verdadero',
 	'false' => 'Falso',
-
+	'confirmed' => 'Confirmado',
+	'canceled' => 'Cancelado',
 ];

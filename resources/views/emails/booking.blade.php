@@ -11,7 +11,7 @@
           <table border="0" cellpadding="0" cellspacing="0" width="500" class="wrapper">
             <!-- LOGO/PREHEADER TEXT -->
             <tr>
-              <td style="padding: 20px 0px 30px 0px;" class="logo">
+              <td style="padding: 20px 0px 20px 0px;" class="logo">
                 <table border="0" cellpadding="0" cellspacing="0" width="100%">
                   <tr>
                     <td bgcolor="#2c5687" width="100" align="left"><a href="http://www.easydockapp.com" target="_blank">
@@ -20,8 +20,8 @@
                     <td bgcolor="#2c5687" width="400" align="right" class="mobile-hide">
                       <table border="0" cellpadding="0" cellspacing="0">
                         <tr>
-                          <td align="right" style="padding: 0 0 5px 0; font-size: 14px; font-family: Arial, sans-serif; color: #ffffff; text-decoration: none;">
-                            <span style="color: #ffffff; text-decoration: none;">EasyDock<br>Book the dock you need wherever you are.</span>
+                          <td align="right" style="padding: 0 0 5px 0; font-size: 18px; font-family: Arial, sans-serif; color: #ffffff; text-decoration: none;">
+                            <span style="color: #ffffff; text-decoration: none;">EasyDock<br><span style="font-size: 12px;">Book the dock you need wherever you are</span></span>
                           </td>
                         </tr>
                       </table>
@@ -53,8 +53,8 @@
                           <td class="padding-copy">
                             <table width="100%" border="0" cellspacing="0" cellpadding="0">
                               <tr>
-                                <td style="text-align: center; vertical-align: middle;">
-                                  <img src="http://www.easydockapp.com/img/booking.png" width="250" height="250" border="0" alt="Booking" style="display: block; padding:0; color: #666666; text-decoration: none; font-family: Helvetica, arial, sans-serif; font-size: 16px; width: 250px; height: 250px;" class="img-max">
+                                <td>
+                                  <img src="http://www.easydockapp.com/img/booking.png" width="250" height="250" border="0" alt="Booking" style="display: block; padding:0; color: #666666; text-decoration: none; font-family: Helvetica, arial, sans-serif; font-size: 16px; width: 250px; height: 250px;margin-left:auto;margin-right:auto" class="img-max">
                                 </td>
                               </tr>
                             </table>
@@ -70,7 +70,7 @@
                     <table width="100%" border="0" cellspacing="0" cellpadding="0">
                       <tr>
                         <td align="center" style="font-size: 25px; font-family: Helvetica, Arial, sans-serif; color: #333333; padding-top: 30px;" class="padding-copy">
-                          {{ $action }}
+                          {{ $title }}
                         </td>
                       </tr>
                       <tr>
@@ -80,10 +80,48 @@
                       </tr>
                       @if ($id != '')
                       <tr>
-                        <td align="center" style="padding: 20px 0 0 0; font-size: 16px; line-height: 25px; font-family: Helvetica, Arial, sans-serif; color: #666666;" class="padding-copy">
-                          <span class="font-size: 14px; font-family: Helvetica, Arial, sans-serif; font-weight: normal; color: #2c5687; text-decoration: none; background-color: #ffffff; border-top: 2px solid #2c5687; border-bottom: 2px solid #2c5687; border-left: 2px solid #2c5687; border-right: 2px solid #2c5687; border-radius: 3px; -webkit-border-radius: 3px; -moz-border-radius: 3px; display: inline-block;">{{ $id }}</span>
+                        <td align="center" style="font-size: 16px; font-family: Helvetica, Arial, sans-serif; color: #666666; padding-top: 10px;" class="padding-copy">
+                          <table border="0" cellspacing="5" cellpadding="5">
+                            <tr>
+                              <td><strong>Id</strong></td>
+                              <td>{{ $id }}</td>
+                            </tr>
+                            <tr>
+                              <td><strong>{{trans('models.fields.from')}}</strong></td>
+                              <td>{{ $date_start }}</td>
+                            </tr>
+                            <tr>
+                              <td><strong>{{trans('models.fields.until')}}</strong></td>
+                              <td>{{ $date_end }}</td>
+                            </tr>
+                            <tr>
+                              <td><strong>{{trans('models.port')}}</strong></td>
+                              <td>{{ $port }}</td>
+                            </tr>
+                          </table>
+                        <td>
+                      </tr>
+                      @if ($action == 'update')
+                      <tr>
+                        <td align="center">
+                          <table width="100%" border="0" cellspacing="0" cellpadding="0" class="mobile-button-container">
+                            <tr>
+                              <td align="center" style="padding: 0;" class="padding-copy">
+                                <table border="0" cellspacing="0" cellpadding="0" class="responsive-table">
+                                  <tr>
+                                    @if ($confirmed)
+                                      <td align="center"><p style="font-size: 14px; font-family: Helvetica, Arial, sans-serif; font-weight: normal; color: #ffffff; text-decoration: none; background-color: #18bc9c; border-top: 2px solid #18bc9c; border-bottom: 2px solid #18bc9c; border-left: 2px solid #18bc9c; border-right: 2px solid #18bc9c; border-radius: 3px; -webkit-border-radius: 3px; -moz-border-radius: 3px; display: inline-block; padding:3px;" class="mobile-button">{{trans('messages.confirmed')}}</p></td>
+                                    @else
+                                      <td align="center"><p style="font-size: 14px; font-family: Helvetica, Arial, sans-serif; font-weight: normal; color: #ffffff; text-decoration: none; background-color: #e74c3c; border-top: 2px solid #e74c3c; border-bottom: 2px solid #e74c3c; border-left: 2px solid #e74c3c; border-right: 2px solid #e74c3c; border-radius: 3px; -webkit-border-radius: 3px; -moz-border-radius: 3px; display: inline-block; padding:3px;" class="mobile-button">{{trans('messages.canceled')}}</p></td>
+                                    @endif
+                                  </tr>
+                                </table>
+                              </td>
+                            </tr>
+                          </table>
                         </td>
                       </tr>
+                      @endif
                       @endif
                       <tr>
                         <td align="center" style="padding: 20px 0 0 0; font-size: 16px; line-height: 25px; font-family: Helvetica, Arial, sans-serif; color: #666666;" class="padding-copy">
@@ -103,7 +141,7 @@
                           <table border="0" cellspacing="0" cellpadding="0" class="responsive-table">
                             <tr>
                               <td align="center">
-                                <a href="http://www.easydockapp.com" target="_blank" style="font-size: 16px; font-family: Helvetica, Arial, sans-serif; font-weight: normal; color: #ffffff; text-decoration: none; background-color: #18bc9c; border-top: 15px solid #18bc9c; border-bottom: 15px solid #18bc9c; border-left: 25px solid #18bc9c; border-right: 25px solid #18bc9c; border-radius: 3px; -webkit-border-radius: 3px; -moz-border-radius: 3px; display: inline-block;" class="mobile-button">Learn How &rarr;</a>
+                                <a href="{{ $url }}" target="_blank" style="font-size: 16px; font-family: Helvetica, Arial, sans-serif; font-weight: normal; color: #ffffff; text-decoration: none; background-color: #2c5687; border-top: 15px solid #2c5687; border-bottom: 15px solid #2c5687; border-left: 25px solid #2c5687; border-right: 25px solid #2c5687; border-radius: 3px; -webkit-border-radius: 3px; -moz-border-radius: 3px; display: inline-block;" class="mobile-button">{{ $button }} &rarr;</a>
                               </td>
                             </tr>
                           </table>

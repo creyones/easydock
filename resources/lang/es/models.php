@@ -25,6 +25,8 @@ return [
 	'dock' => 'Atraque',
 	'booking' => 'Reserva',
 	'product' => 'Producto',
+	'role' => 'Rol',
+	'roles' => 'Roles',
 
 	'fields' => [
 		'id' => 'Id',

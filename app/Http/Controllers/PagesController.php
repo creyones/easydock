@@ -28,18 +28,17 @@ class PagesController extends Controller {
 	//
 	public function home()
 	{
-
+		//Home page presentation
 		$current_user = Auth::user();
 
-		//Query Docks
-		$docks = new ParseQuery('Productos');
-		$docks->ascending('createdAt');
-
-		//Query Requests
-		$bookings = new ParseQuery('Solicitudes');
-		$bookings->ascending('createdAt');
-
 		if ($current_user->hasRole('admin') || $current_user->hasRole('owner')){
+			//Query Docks
+			$docks = new ParseQuery('Atraques');
+			$docks->ascending('createdAt');
+
+			//Query Requests
+			$bookings = new ParseQuery('Solicitudes');
+			$bookings->ascending('createdAt');
 
 			//Query App Users
 			$users = ParseUser::query();
@@ -56,11 +55,38 @@ class PagesController extends Controller {
 
 			return view('home', compact('users', 'providers', 'ports', 'docks', 'bookings'));
 		}
-		else {
+		else if ($current_user->hasRole('provider')) {
+			$provider = $this->getCurrentProvider();
+
+			$docks = new ParseQuery('Atraques');
+			$docks->equalTo('vendedorRelation', $provider);
+			$docks->ascending('createdAt');
+
+			//Related docks to provider
+			$queries = [];
+			$results = $docks->find();
+			foreach ($results as $dock) {
+				$query = new ParseQuery('Solicitudes');
+				$query->equalTo('atraqueRelation', $dock);
+				array_push($queries, $query);
+			}
+			$bookings = ParseQuery::orQueries($queries);
 
 			return view('home', compact('docks', 'bookings'));
 		}
+		else {
+			return view('home', compact('docks', 'bookings'));
+		}
 
+	}
+
+	private function getCurrentProvider() {
+		//Query provider
+		$rel = new ParseQuery('Vendedores');
+		$rel->equalTo('username', Auth::user()->username);
+		$provider = $rel->find()[0];
+
+		return $provider;
 	}
 
 }

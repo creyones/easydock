@@ -28,13 +28,26 @@
 					</div>
 					<div class="row">
 						<hr/>
-						<div class="col-sm-4">
+						<div class="col-sm-3">
 							<p><i class="fa fa-user"></i> <strong>{{trans('models.fields.username')}}</strong></p>
 							<p> {{$provider->get('username')}} </p>
 						</div>
-						<div class="col-sm-8">
+						<div class="col-sm-6">
 							<p><i class="fa fa fa-envelope-o"></i> <strong>{{trans('models.fields.email')}}</strong></p>
 							<p> {{$provider->get('email')}} </p>
+						</div>
+					</div>
+					<div class="row">
+						<hr/>
+						@if ($profile)
+						<div class="col-sm-3">
+							<p><i class="fa fa-cogs"></i> <strong>{{trans('models.role')}}</strong></p>
+							<p> {{$profile->roles()->first()->display_name}} </p>
+						</div>
+						@endif
+						<div class="col-sm-6">
+							<p><i class="fa fa fa-ship"></i> <strong>{{trans('models.port')}}</strong></p>
+							<p> {{($port ? $port->get('name') : '')}} </p>
 						</div>
 					</div>
 

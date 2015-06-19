@@ -47,6 +47,22 @@ class DocksController extends Controller {
 
 			return view('docks.index', compact('docks'));
 		}
+		else if($current_user->hasRole('provider')){
+			//Query provider
+			$rel = new ParseQuery('Vendedores');
+			$rel->equalTo('username', $current_user->username);
+			$provider = $this->getCurrentProvider();
+
+			//Query Docks
+			$query = new ParseQuery('Atraques');
+			$query->equalTo('vendedorRelation', $provider);
+			$query->select(['name', 'puertoRelation', 'vendedorRelation']);
+			$query->ascending('createdAt');
+
+			$docks = $query->find();
+
+			return view('docks.index', compact('docks'));
+		}
 		else
 		{
 			return view('docks.index');
@@ -57,12 +73,15 @@ class DocksController extends Controller {
 	{
 		$current_user = Auth::user();
 
-		if ($current_user->hasRole('admin') || $current_user->hasRole('owner')){
+		if ($current_user->hasRole('admin') || $current_user->hasRole('owner') || $current_user->hasRole('provider')){
 
 			//Query Dock
 			$query = new ParseQuery('Atraques');
 			$query->equalTo("objectId", $id);
 
+			if($current_user->hasRole('provider')) {
+				$query->equalTo("vendedorRelation", $this->getCurrentProvider());
+			}
 			$docks = $query->find();
 
 			//No results
@@ -92,7 +111,7 @@ class DocksController extends Controller {
 
 			return view('docks.show', compact('dock', 'port', 'provider', 'bookings', 'products'));
 		}
-		else if($current_user->hasRole('admin'))
+		else
 		{
 			return view('docks.show');
 		}
@@ -100,10 +119,18 @@ class DocksController extends Controller {
 
 	public function create()
 	{
-		$ports = $this->listPorts();
-		$providers = $this->listProviders();
+		$current_user = Auth::user();
 
-		return view('docks.create', compact('ports', 'providers'));
+		if( $current_user->hasRole('provider') ) {
+			$provider = $this->getCurrentProvider();
+			$port = $provider->get('puertoRelation')->getQuery()->find()[0];
+			return view('docks.create', compact('port', 'provider'));
+		}
+		else {
+			$ports = $this->listPorts();
+			$providers = $this->listProviders();
+			return view('docks.create', compact('ports', 'providers'));
+		}
 	}
 
 	public function store(DockRequest $request)
@@ -124,8 +151,8 @@ class DocksController extends Controller {
 		$filepath = public_path('img') . "/" . $file->getClientOriginalName();
 
 		//Fit Images
-		$imagepath = $this->fitImage($filepath, 200, 200);
-		$thumbpath = $this->fitImage($imagepath, 75, 75, 'thumb');
+		$imagepath = $this->fitImage($filepath, 480, 480);
+		$thumbpath = $this->fitImage($imagepath, 240, 240, 'thumb');
 
 		//Create Parse Files
 		$image = ParseFile::createFromFile($imagepath, basename($imagepath));
@@ -139,6 +166,7 @@ class DocksController extends Controller {
 		$dock = new ParseObject('Atraques');
 		$dock->set('name', $request->get('name'));
 		$dock->set('detailText', $request->get('details'));
+		$dock->set('codigo', $request->get('code'));
 		$dock->set('fechaInicio', $begin);
 		$dock->set('fechaFinal', $end);
 		$dock->set('precio', floatval($request->get('price')));
@@ -160,23 +188,34 @@ class DocksController extends Controller {
 		$dock->set('vigilancia', $request->get('surveillance') == '1' ? true : false);
 		$dock->set('wifi', $request->get('wifi') == '1' ? true : false);
 
-		//Set Port Relation
-		$query = new ParseQuery('Puertos');
-		$query->equalTo('name', $request->get('ports'));
-
-		$ports = $query->find();
-		$port = $ports[0];
-		$dock->getRelation('puertoRelation')->add($port);
 		$dock->set('provincia', $port->get('province'));
 
-		//Set Provider Relation
-		$query = new ParseQuery('Vendedores');
-		$query->equalTo('username', $request->get('providers'));
+		$port = null;
+		$provider = null;
+		if( $current_user->hasRole('provider') ) {
+			$provider = $this->getCurrentProvider();
+			$port = $provider->get('puertoRelation')->getQuery()->find()[0];
+		}
+		else
+		{
+			//Set Provider Relation
+			$query = new ParseQuery('Vendedores');
+			$query->equalTo('username', $request->get('providers'));
 
-		$providers = $query->find();
-		$provider = $providers[0];
+			$providers = $query->find();
+			$provider = $providers[0];
+
+			//Set Port Relation
+			$query = new ParseQuery('Puertos');
+			$query->equalTo('name', $request->get('ports'));
+
+			$ports = $query->find();
+			$port = $ports[0];
+		}
+
+		$dock->getRelation('puertoRelation')->add($port);
 		$dock->getRelation('vendedorRelation')->add($provider);
-
+		dd($dock);
 		try {
 
 			$image->save();
@@ -200,7 +239,7 @@ class DocksController extends Controller {
 	{
 		$current_user = Auth::user();
 
-		if ($current_user->hasRole('admin') || $current_user->hasRole('owner')){
+		if ($current_user->hasRole('admin') || $current_user->hasRole('owner') || $current_user->hasRole('provider')){
 
 			//Query Port
 			$query = new ParseQuery('Atraques');
@@ -211,6 +250,10 @@ class DocksController extends Controller {
 
 				$port = $dock->get('puertoRelation')->getQuery()->find()[0];
 				$provider = $dock->get('vendedorRelation')->getQuery()->find()[0];
+
+				if ($current_user->hasRole('provider') && $provider->get('username') != $current_user->username) {
+					return redirect()->back()->withErrors('No Permissions');
+				}
 
 				$ports = $this->listPorts();
 				$providers = $this->listProviders();
@@ -234,9 +277,10 @@ class DocksController extends Controller {
 	{
 		$current_user = Auth::user();
 
-		if ($current_user->hasRole('admin') || $current_user->hasRole('owner')){
+		if ($current_user->hasRole('admin') || $current_user->hasRole('owner') || $current_user->hasRole('provider')){
 
 			$this->validate($request, [
+				'code' => 'required|min:6|max:40',
 				'name' => 'required|min:8|max:40',
 				'details' => 'required|min:20|max:300',
 				'from' => 'required',
@@ -244,8 +288,6 @@ class DocksController extends Controller {
 				'beam' => 'required',
 				'length' => 'required',
 				'draft' => 'required',
-				'providers' => 'required|min:6',
-				'ports' => 'required|min:6'
 			]);
 
 			//Query Port
@@ -254,6 +296,7 @@ class DocksController extends Controller {
 			$dock = $query->get($id);
 			$dock->set('name', $request->get('name'));
 			$dock->set('detailText', $request->get('details'));
+			$dock->set('codigo', $request->get('code'));
 			$dock->set('precio', floatval($request->get('price')));
 			$dock->set('manga', floatval($request->get('beam')));
 			$dock->set('eslora', floatval($request->get('length')));
@@ -323,8 +366,8 @@ class DocksController extends Controller {
 				$file->move(public_path('img'), $file->getClientOriginalName());
 
 				//Fit Images
-				$imagepath = $this->fitImage($filepath, 200, 200);
-				$thumbpath = $this->fitImage($imagepath, 75, 75, 'thumb');
+				$imagepath = $this->fitImage($filepath, 480, 480);
+				$thumbpath = $this->fitImage($imagepath, 240, 240, 'thumb');
 
 				//Create Parse Files
 				$image = ParseFile::createFromFile($imagepath, basename($imagepath));
@@ -339,22 +382,25 @@ class DocksController extends Controller {
 				$dock->set('image', $image);
 			}
 
-			//Set Port Relation
-			$query = new ParseQuery('Puertos');
-			$query->equalTo("name", $request->get('ports'));
+			if(!$current_user->hasRole('provider'))
+			{
+				//Set Port Relation
+				$query = new ParseQuery('Puertos');
+				$query->equalTo("name", $request->get('ports'));
 
-			$ports = $query->find();
-			$port = $ports[0];
-			$dock->getRelation("puertoRelation")->add($port);
-			$dock->set('provincia', $port->get('province'));
+				$ports = $query->find();
+				$port = $ports[0];
+				$dock->getRelation("puertoRelation")->add($port);
+				$dock->set('provincia', $port->get('province'));
 
-			//Set Provider Relation
-			$query = new ParseQuery('Vendedores');
-			$query->equalTo("username", $request->get('providers'));
+				//Set Provider Relation
+				$query = new ParseQuery('Vendedores');
+				$query->equalTo("username", $request->get('providers'));
 
-			$providers = $query->find();
-			$provider = $providers[0];
-			$dock->getRelation("vendedorRelation")->add($provider);
+				$providers = $query->find();
+				$provider = $providers[0];
+				$dock->getRelation("vendedorRelation")->add($provider);
+			}
 
 			try {
 				//Update Port in Parse
@@ -459,6 +505,15 @@ class DocksController extends Controller {
 			$users[$items[$i]->get('username')] = $items[$i]->get('username');
 		}
 		return $users;
+	}
+
+	private function getCurrentProvider() {
+		//Query provider
+		$rel = new ParseQuery('Vendedores');
+		$rel->equalTo('username', Auth::user()->username);
+		$provider = $rel->find()[0];
+
+		return $provider;
 	}
 
 	private function fitImage($path, $width, $height, $suffix = 'scaled')

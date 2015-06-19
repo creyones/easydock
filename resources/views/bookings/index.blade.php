@@ -10,7 +10,7 @@
 			@include('partials.flash')
 			<!-- Main Content -->
 			<div class="row">
-				@if (Auth::user()->hasRole('owner') || Auth::user()->hasRole('admin'))
+				@if (Auth::user()->hasRole('owner') || Auth::user()->hasRole('admin') || Auth::user()->hasRole('provider'))
 				<div class="col-sm-12">
 					<p class="lead"><i class="fa fa-anchor fa-2x"></i> <span class="text-success"> {{count($bookings)}} </span> {{trans('models.bookings')}} <a class="hidden btn btn-default pull-right" href={{route('bookings.create')}}>{{trans('views.create_booking')}}</a></p>
 				</div>
@@ -38,7 +38,9 @@
 									<ul class="list-inline">
 										<li><a class="btn btn-xs btn-success" href={{ route('bookings.show', array('id' => $booking->getObjectId())) }}><i class="fa fa-eye"></i></a></li>
 										<li><a class="btn btn-xs btn-primary" href={{ route('bookings.edit', array('id' => $booking->getObjectId())) }}><i class="fa fa-pencil-square-o"></i></a></li>
+										@if (!Auth::user()->hasRole('provider'))
 										<li><button type="button" class="btn btn-xs btn-danger" data-toggle="modal" data-target="#deleteModal" data-id={{$booking->getObjectId()}} data-whatever={{ route('bookings.destroy', array('id' => $booking->getObjectId())) }}><i class="fa fa-trash-o"></i></button></li>
+										@endif
 									</ul>
 								</td>
 							</tr>

@@ -25,6 +25,8 @@ return [
 	'dock' => 'Dock',
 	'booking' => 'Booking',
 	'product' => 'Product',
+	'role' => 'Role',
+	'roles' => 'Roles',
 
 	'fields' => [
 		'id' => 'Id',

@@ -34,15 +34,17 @@ class BookingsController extends Controller {
 	{
 		$current_user = Auth::user();
 
+		//Query Docks
+		$query = new ParseQuery('Solicitudes');
+		$query->select(['nombrePuerto', 'userRelation', 'fechaInicio', 'fechaFinal']);
+		$query->ascending('createdAt');
+
 		if ($current_user->hasRole('admin') || $current_user->hasRole('owner')){
-
-			//Query Docks
-			$query = new ParseQuery('Solicitudes');
-			$query->select(['nombrePuerto', 'userRelation', 'fechaInicio', 'fechaFinal']);
-			$query->ascending('createdAt');
-
 			$bookings = $query->find();
-
+			return view('bookings.index', compact('bookings'));
+		}
+		else if ($current_user->hasRole('provider')) {
+			$bookings = $this->scopeProvider("*");
 			return view('bookings.index', compact('bookings'));
 		}
 		else
@@ -55,25 +57,26 @@ class BookingsController extends Controller {
 	{
 		$current_user = Auth::user();
 
-		if ($current_user->hasRole('admin') || $current_user->hasRole('owner')){
-
-			//Query Dock
+		if ($current_user->hasRole('admin') || $current_user->hasRole('owner') || $current_user->hasRole('provider')){
+			//Query Bookings
 			$query = new ParseQuery('Solicitudes');
-			$query->equalTo("objectId", $id);
+			$bookings = null;
+			if ($current_user->hasRole('provider')) $bookings = $this->scopeProvider($id);
+			else {
+				$query->equalTo("objectId", $id);
+				$bookings = $query->find();
+			}
 
-			$bookings = $query->find();
+			//No results
+			if ($bookings && count($bookings) <= 0) {
+				return view('bookings.show')->withErrors(trans('validation.custom.not-found'));
+			}
 
 			//Query related Products
 			$relQuery = new ParseQuery('Productos');
 			$relQuery->matchesQuery('solicitudRelation', $query);
 
 			$products = $relQuery->find();
-
-			//No results
-			if (count($bookings) <= 0)
-			{
-				return view('bookings.show')->withErrors(trans('validation.custom.not-found'));
-			}
 
 			$booking = $bookings[0];
 
@@ -102,7 +105,6 @@ class BookingsController extends Controller {
 	{
 
 		//Create Parse Booking
-		//Temp Code
 		$q = new ParseQuery('Atraques');
 		$dock = $q->get('iMV2W3Lo9u');
 
@@ -145,6 +147,9 @@ class BookingsController extends Controller {
 				$product->save();
 			}
 
+			//Notify provider
+			$this->notify($booking, 'store', 'provider');
+
 			return redirect('bookings')->with([
 				'flash_message' => trans('messages.booking_created'),
 				'flash_message_important' => true
@@ -159,20 +164,30 @@ class BookingsController extends Controller {
 	{
 		$current_user = Auth::user();
 
-		if ($current_user->hasRole('admin') || $current_user->hasRole('owner')){
+		if ($current_user->hasRole('admin') || $current_user->hasRole('owner') || $current_user->hasRole('provider')){
 
 			//Query Port
 			$query = new ParseQuery('Solicitudes');
+			$bookings = null;
+
+			if ($current_user->hasRole('provider')) $bookings = $this->scopeProvider($id);
+			else {
+				$query->equalTo("objectId", $id);
+				$bookings = $query->find();
+			}
+
+			//No results
+			if ($bookings && count($bookings) <= 0) {
+				return view('bookings.show')->withErrors(trans('validation.custom.not-found'));
+			}
 
 			try {
 				//Get Port by id
-				$booking = $query->get($id);
+				$booking = $bookings[0];
 
+				//dd($booking);
 				$dock = $booking->get('atraqueRelation')->getQuery()->find()[0];
 				$user = $booking->get('userRelation')->getQuery()->find()[0];
-
-				//$docks = $this->listDocks($booking->get('nombrePuerto'));
-				//$users = $this->listUsers();
 
 				return view('bookings.edit', compact('booking', 'dock', 'user'));
 
@@ -193,7 +208,7 @@ class BookingsController extends Controller {
 	{
 		$current_user = Auth::user();
 
-		if ($current_user->hasRole('admin') || $current_user->hasRole('owner')){
+		if ($current_user->hasRole('admin') || $current_user->hasRole('owner') || $current_user->hasRole('provider')){
 
 			//Query Port
 			$query = new ParseQuery('Solicitudes');
@@ -266,9 +281,6 @@ class BookingsController extends Controller {
 					$this->confirmProducts($booking, false);
 				}
 
-				//Notify user
-				$this->notify($booking, 'update', 'user');
-
 				$modified = true;
 			}
 
@@ -282,8 +294,8 @@ class BookingsController extends Controller {
 				//Update Booking in Parse
 				if ($modified) {
 					$booking->save();
-					//Notify provider
-
+					//Notify user/provider
+					$this->notify($booking, 'update', 'both');
 				}
 				else {
 					return redirect()->back()->withErrors(trans('validation.custom.not-modified'));
@@ -327,6 +339,9 @@ class BookingsController extends Controller {
 
 				//Free related Products
 				$this->freeProducts($booking, $from, $until);
+
+				//Notify provider
+				$this->notify($booking, 'delete', 'provider');
 
 				//Destroy Port in Parse
 				$booking->destroy();
@@ -445,6 +460,36 @@ class BookingsController extends Controller {
 
 	}
 
+	private function getCurrentProvider() {
+		//Query provider
+		$rel = new ParseQuery('Vendedores');
+		$rel->equalTo('username', Auth::user()->username);
+		$provider = $rel->find()[0];
+
+		return $provider;
+	}
+
+	private function scopeProvider($id) {
+		//Queery related docks
+		$docks = new ParseQuery('Atraques');
+		$docks->equalTo('vendedorRelation', $this->getCurrentProvider());
+		$docks->ascending('createdAt');
+		//Related docks to provider
+		$queries = [];
+		$results = $docks->find();
+		foreach ($results as $dock) {
+			$query = new ParseQuery('Solicitudes');
+			$query->equalTo('atraqueRelation', $dock);
+			if($id != '*') {
+				$query->equalTo('objectId', $id);
+			}
+			array_push($queries, $query);
+		}
+		//Query bookings with or condition
+		$orQuery = ParseQuery::orQueries($queries);
+		return $orQuery->find();
+	}
+
 	private function notify($booking, $action, $recipient = 'user') {
 
 		$to = '';
@@ -452,6 +497,7 @@ class BookingsController extends Controller {
 		$intro = '';
 		$text = '';
 		$url = '';
+		$button = '';
 
 		$user = $booking->get('userRelation')->getQuery()->find()[0];
 		$dock = $booking->get('atraqueRelation')->getQuery()->find()[0];
@@ -459,29 +505,36 @@ class BookingsController extends Controller {
 
 		$id = $booking->getObjectId();
 
+		if ($recipient != 'provider') {
+			$button = trans('actions.contact');
+			$url = 'mailto:' . $provider->get('email');
+		}
+
 		if ($action === 'store') {
 
-			$title = trans('emails.new-booking');
-			$intro = trans('emails.new-booking-intro');
-			$text = trans('emails.new-booking-text');
+			$title = trans('emails.provider.new-booking');
+			$intro = trans('emails.provider.new-booking-intro');
+			$text = trans('emails.provider.new-booking-text');
 			$to = $provider->get('email');
-
 		}
 		else if ($action === 'update') {
 
-			$title = trans('emails.update-booking');
-			$intro = trans('emails.update-booking-intro');
-			$text = trans('emails.update-booking-text');
+			$title = trans('emails.user.update-booking');
 
-			if ($recipient === 'user') {
-				$to = $user->get('email');
+			if ($recipient === 'provider') {
+				$to = $provider->get('email');
+				$contact = $user->get('email');
+				$intro = trans('emails.provider.update-booking-intro');
+				$text = trans('emails.provider.update-booking-text');
+				$button = trans('actions.edit');
+				$url = route('bookings.edit', array('id' => $booking->getObjectId()));
 			}
 			else {
-				$to = $provider->get('email');
+				$to = $user->get('email');
+				$contact = $provider->get('email');
+				$intro = trans('emails.user.update-booking-intro');
+				$text = trans('emails.user.update-booking-text');
 			}
-
-		}
-		elseif ($action === 'cancel') {
 
 		}
 		elseif ($action === 'delete') {
@@ -489,21 +542,45 @@ class BookingsController extends Controller {
 		}
 
 		$data = ['to' => $to,
-						'from' => 'no-reply@easydockapp.com',
-						'action' => $title,
+						'from' => 'hello@easydockapp.com',
+						'from_name' => 'EasyDock',
+						'action' => $action,
+						'title' => $title,
 						'intro' => $intro,
 						'text' => $text,
 						'id' => $id,
+						'port' => $booking->get('nombrePuerto'),
+						'date_start' => $booking->get('fechaInicio')->format('d/m/Y'),
+						'date_end' => $booking->get('fechaFinal')->format('d/m/Y'),
+						'confirmed' => $booking->get('confirmado'),
+						'button' => $button,
 						'url' => $url
 						];
 
 		//dd($data);
 
-		Mail::queue('emails.booking', $data, function($message)
+		Mail::queue('emails.booking', $data, function($message) use ($data)
 		{
-			$message->from('no-reply@easydockapp.com', 'EasyDock');
-			$message->to('jballesteros@adelaapp.com')->subject('Booking Updated!');;
+			$message->from($data['from'], $data['from_name']);
+			$message->to($data['to'])->subject($data['action']);
 		});
+
+		if ($recipient == "both")
+		{
+			//Notify provider too
+			$data['to'] = $provider->get('email');
+			$data['intro'] = trans('emails.provider.update-booking-intro');
+			$data['text'] = trans('emails.provider.update-booking-text');
+			$data['url'] = route('bookings.edit', array('id' => $booking->getObjectId()));
+			if ($action === 'update') $data['button'] = trans('actions.edit');
+			else $data['button'] = trans('actions.view');
+
+			Mail::queue('emails.booking', $data, function($message) use ($data)
+			{
+				$message->from($data['from'], $data['from_name']);
+				$message->to($data['to'])->subject($data['action']);
+			});
+		}
 	}
 
 }

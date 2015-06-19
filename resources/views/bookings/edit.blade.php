@@ -10,7 +10,7 @@
 			<!-- Main Content -->
 			<div class="row">
 				@include('errors.list')
-				@if (Auth::user()->hasRole('owner') || Auth::user()->hasRole('admin'))
+				@if (Auth::user()->hasRole('owner') || Auth::user()->hasRole('admin') || Auth::user()->hasRole('provider'))
 				<div class="col-sm-12">
 					<p class="lead"><i class="fa fa-edit fa-lg"></i> {{trans('views.edit_booking')}}</p></li>
 					{!! Form::model($booking, ['method'=> 'PATCH', 'action' => ['BookingsController@update', $booking->getObjectId()], 'class' =>'form-horizontal','role'=>'form']) !!}

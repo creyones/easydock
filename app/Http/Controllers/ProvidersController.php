@@ -81,7 +81,14 @@ class ProvidersController extends Controller {
 			//Query Laravel Profile
 			$profile = User::where('username', '=', $provider->get('username'))->first();
 
-			return view('providers.show', compact('provider', 'docks', 'profile'));
+			//Query port
+			$rel = $provider->get('puertoRelation')->getQuery()->find();
+			$port = null;
+			if(!empty($rel)){
+				$port = $provider->get('puertoRelation')->getQuery()->find()[0];
+			}
+
+			return view('providers.show', compact('provider', 'docks', 'profile', 'port'));
 		}
 		else
 		{
@@ -91,7 +98,8 @@ class ProvidersController extends Controller {
 
 	public function create()
 	{
-		return view('providers.create');
+		$ports = $this->listPorts();
+		return view('providers.create', compact('ports'));
 	}
 
 	public function store(ProviderRequest $request)
@@ -117,10 +125,11 @@ class ProvidersController extends Controller {
 		$profile->phone	  	= $request->get('phone');
 		$profile->password  = bcrypt($request->get('password'));
 
+		$role = Role::where('name', '=', 'provider')->first();
 		$profile->save();
 
-		$provider = Role::where('name', '=', 'provider')->first();
-		$profile->attachRole($provider);
+		$profile->attachRole($role);
+		$profile->save();
 
 		try {
 			$provider->save();
@@ -144,11 +153,20 @@ class ProvidersController extends Controller {
 			$query = new ParseQuery('Vendedores');
 			//Get Provider by id
 			$provider = $query->get($id);
+			$roles = Role::lists('display_name','name');
 
 			//Query Laravel Profile
 			$profile = User::where('username', '=', $provider->get('username'))->first();
 
-			return view('providers.edit', compact('provider', 'profile'));
+			//List ports
+			$ports = $this->listPorts();
+			$rel = $provider->get('puertoRelation')->getQuery()->find();
+			$port = null;
+			if(!empty($rel)){
+				$port = $provider->get('puertoRelation')->getQuery()->find()[0];
+			}
+
+			return view('providers.edit', compact('provider', 'profile', 'roles', 'ports', 'port'));
 		}
 		else
 		{
@@ -168,11 +186,22 @@ class ProvidersController extends Controller {
 			$provider = $query->get($id);
 			$provider->set('email', $request->get('email'));
 			$provider->set('username', $request->get('username'));
-			$provider->set('password', $request->get('password'));
+			$provider->set('password', bcrypt($request->get('password')));
+			//Set Port Relation
+			$query = new ParseQuery('Puertos');
+			$query->equalTo("name", $request->get('port'));
+			$port = $query->find()[0];
+			$provider->getRelation("puertoRelation")->add($port);
 
 			//Update Laravel Profile
 			$profile = User::where('username', '=', $provider->get('username'))->first();
 			$profile->update($request->all());
+
+			//Update roles
+			if(!$profile->hasRole($request->get('role'))) {
+				$role = Role::where('name', '=', $request->get('role'))->first();
+				$profile->attachRole($role);
+			}
 
 			try {
 				//Update Provider in Parse
@@ -244,6 +273,23 @@ class ProvidersController extends Controller {
 		{
 			return redirect('providers');
 		}
+	}
+
+	private function listPorts()
+	{
+		$query = new ParseQuery('Puertos');
+		$query->select('name');
+		$query->ascending("name");
+		$query->limit(500);
+		$items = $query->find();
+		$count = $query->count();
+
+		$ports = [];
+		for ($i = 0; $i < $count; ++$i)
+		{
+			$ports[$items[$i]->get('name')] = $items[$i]->get('name');
+		}
+		return $ports;
 	}
 
 }

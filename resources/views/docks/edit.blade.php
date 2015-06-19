@@ -10,7 +10,7 @@
 			<!-- Main Content -->
 			<div class="row">
 				@include('errors.list')
-				@if (Auth::user()->hasRole('owner') || Auth::user()->hasRole('admin'))
+				@if (Auth::user()->hasRole('owner') || Auth::user()->hasRole('admin') || Auth::user()->hasRole('provider'))
 				<div class="col-sm-12">
 					<p class="lead"><i class="fa fa-edit fa-lg"></i> {{trans('views.edit_dock')}}</p></li>
 					{!! Form::model($dock, ['method'=> 'PATCH', 'action' => ['DocksController@update', $dock->getObjectId()], 'class' =>'form-horizontal','role'=>'form', 'files' => true]) !!}
@@ -31,6 +31,7 @@
 						</div>
 					</div>
 					<hr/>
+					@if (!Auth::user()->hasRole('provider'))
 					<div class="form-group">
 						{!!Form::Label('providers', trans('models.provider'), ['class'=>'col-sm-2 control-label']) !!}
 						<div class="col-sm-8">
@@ -44,6 +45,7 @@
 						</div>
 					</div>
 					<hr/>
+					@endif
 					<div class="form-group">
 						{!!Form::Label('name', trans('models.fields.code'), ['class'=>'col-sm-2 control-label']) !!}
 						<div class="col-sm-8">
