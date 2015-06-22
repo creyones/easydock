@@ -51,7 +51,7 @@ class DocksController extends Controller {
 			//Query provider
 			$rel = new ParseQuery('Vendedores');
 			$rel->equalTo('username', $current_user->username);
-			$provider = $this->getCurrentProvider();
+			$provider = $this->getRelatedProvider();
 
 			//Query Docks
 			$query = new ParseQuery('Atraques');
@@ -80,7 +80,7 @@ class DocksController extends Controller {
 			$query->equalTo("objectId", $id);
 
 			if($current_user->hasRole('provider')) {
-				$query->equalTo("vendedorRelation", $this->getCurrentProvider());
+				$query->equalTo("vendedorRelation", $this->getRelatedProvider());
 			}
 			$docks = $query->find();
 
@@ -122,7 +122,7 @@ class DocksController extends Controller {
 		$current_user = Auth::user();
 
 		if( $current_user->hasRole('provider') ) {
-			$provider = $this->getCurrentProvider();
+			$provider = $this->getRelatedProvider();
 			$port = $provider->get('puertoRelation')->getQuery()->find()[0];
 			return view('docks.create', compact('port', 'provider'));
 		}
@@ -188,34 +188,15 @@ class DocksController extends Controller {
 		$dock->set('vigilancia', $request->get('surveillance') == '1' ? true : false);
 		$dock->set('wifi', $request->get('wifi') == '1' ? true : false);
 
-		$dock->set('provincia', $port->get('province'));
-
-		$port = null;
-		$provider = null;
-		if( $current_user->hasRole('provider') ) {
-			$provider = $this->getCurrentProvider();
-			$port = $provider->get('puertoRelation')->getQuery()->find()[0];
-		}
-		else
-		{
-			//Set Provider Relation
-			$query = new ParseQuery('Vendedores');
-			$query->equalTo('username', $request->get('providers'));
-
-			$providers = $query->find();
-			$provider = $providers[0];
-
-			//Set Port Relation
-			$query = new ParseQuery('Puertos');
-			$query->equalTo('name', $request->get('ports'));
-
-			$ports = $query->find();
-			$port = $ports[0];
-		}
+		//Get Provider Relation
+		$provider = $this->getRelatedProvider($request->get('provider'));
+		//Get Port Relation
+		$port = $this->getRelatedPort($request->get('port'));
 
 		$dock->getRelation('puertoRelation')->add($port);
 		$dock->getRelation('vendedorRelation')->add($provider);
-		dd($dock);
+		$dock->set('provincia', $port->get('province'));
+
 		try {
 
 			$image->save();
@@ -382,25 +363,15 @@ class DocksController extends Controller {
 				$dock->set('image', $image);
 			}
 
-			if(!$current_user->hasRole('provider'))
-			{
-				//Set Port Relation
-				$query = new ParseQuery('Puertos');
-				$query->equalTo("name", $request->get('ports'));
+			//Get Provider Relation
+			$provider = $this->getRelatedProvider($request->get('provider'));
+			//Get Port Relation
+			$port = $this->getRelatedPort($request->get('port'));
 
-				$ports = $query->find();
-				$port = $ports[0];
-				$dock->getRelation("puertoRelation")->add($port);
-				$dock->set('provincia', $port->get('province'));
-
-				//Set Provider Relation
-				$query = new ParseQuery('Vendedores');
-				$query->equalTo("username", $request->get('providers'));
-
-				$providers = $query->find();
-				$provider = $providers[0];
-				$dock->getRelation("vendedorRelation")->add($provider);
-			}
+			//Update Dock fields
+			$dock->getRelation("vendedorRelation")->add($provider);
+			$dock->getRelation("puertoRelation")->add($port);
+			$dock->set('provincia', $port->get('province'));
 
 			try {
 				//Update Port in Parse
@@ -489,6 +460,22 @@ class DocksController extends Controller {
 		return $ports;
 	}
 
+	private function getRelatedPort($name = "current") {
+		// Check if current user
+		if ($name == null || $name == "current") {
+			$provider = $this->getRelatedProvider();
+			$port = $provider->get('puertoRelation')->getQuery()->find()[0];
+		}
+		else {
+			$query = new ParseQuery('Puertos');
+			$query->equalTo("name", $name);
+			$ports = $query->find();
+			$port = $ports[0];
+		}
+
+		return $port;
+	}
+
 	private function listProviders()
 	{
 		//return Provinces::lists('name','name');
@@ -507,11 +494,17 @@ class DocksController extends Controller {
 		return $users;
 	}
 
-	private function getCurrentProvider() {
-		//Query provider
-		$rel = new ParseQuery('Vendedores');
-		$rel->equalTo('username', Auth::user()->username);
-		$provider = $rel->find()[0];
+	private function getRelatedProvider($name = "current") {
+		// Check if current user
+		if ($name == null || $name == "current") {
+			$name = Auth::user()->username;
+		}
+
+		$query = new ParseQuery('Vendedores');
+		$query->equalTo("username", $name);
+
+		$providers = $query->find();
+		$provider = $providers[0];
 
 		return $provider;
 	}

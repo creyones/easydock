@@ -16,28 +16,28 @@
 					{!! Form::open(['action' => 'DocksController@store', 'class' => 'form-horizontal', 'role'=>'form', 'files' => true]) !!}
 					@if (Auth::user()->hasRole('provider'))
 					<div class="form-group">
-						{!!Form::Label('providers', trans('models.provider'), ['class'=>'col-sm-2 control-label']) !!}
+						{!!Form::Label('provider', trans('models.provider'), ['class'=>'col-sm-2 control-label']) !!}
 						<div class="col-sm-8">
-							{!! Form::text('providers', $provider->get('username'), ['class'=>'form-control', 'disabled' => 'disabled']) !!}
+							{!! Form::text('provider', $provider->get('username'), ['class'=>'form-control', 'disabled' => 'disabled']) !!}
 						</div>
 					</div>
 					<div class="form-group">
-						{!!Form::Label('ports', trans('models.port'), ['class'=>'col-sm-2 control-label']) !!}
+						{!!Form::Label('port', trans('models.port'), ['class'=>'col-sm-2 control-label']) !!}
 						<div class="col-sm-8">
-							{!! Form::text('ports', $port->get('name'), ['class'=>'form-control', 'disabled' => 'disabled']) !!}
+							{!! Form::text('port', $port->get('name'), ['class'=>'form-control', 'disabled' => 'disabled']) !!}
 						</div>
 					</div>
 					@else
 					<div class="form-group">
-						{!!Form::Label('providers', trans('models.provider'), ['class'=>'col-sm-2 control-label']) !!}
+						{!!Form::Label('provider', trans('models.provider'), ['class'=>'col-sm-2 control-label']) !!}
 						<div class="col-sm-8">
-							{!! Form::select('providers', $providers, '', ['class'=>'form-control']) !!}
+							{!! Form::select('provider', $providers, '', ['class'=>'form-control']) !!}
 						</div>
 					</div>
 					<div class="form-group">
-						{!!Form::Label('ports', trans('models.port'), ['class'=>'col-sm-2 control-label']) !!}
+						{!!Form::Label('port', trans('models.port'), ['class'=>'col-sm-2 control-label']) !!}
 						<div class="col-sm-8">
-							{!! Form::select('ports', $ports, '', ['class'=>'form-control']) !!}
+							{!! Form::select('port', $ports, '', ['class'=>'form-control']) !!}
 						</div>
 					</div>
 					@endif
@@ -170,9 +170,15 @@
 	$("#image").fileinput({
 		uploadUrl: "{{url("/")}}/tmp/", // server upload action
     uploadAsync: true,
+		dropZoneEnabled: false,
 		minFileCount: 1,
 		maxFileCount: 1,
+		overwriteInitial: true,
 		maxFileSize: 800,
+		showUpload: false,
+		showRemove: false,
+		showCancel: false,
+		allowedFileExtensions: ["jpg", "gif", "png"],
 		allowedFileExtensions: ["jpg", "gif", "png"],
 		indicatorLoading: '<i class="fa fa-spinner"></i>'
 	});

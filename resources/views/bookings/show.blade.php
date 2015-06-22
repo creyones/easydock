@@ -40,7 +40,7 @@
 							<p><i class="fa fa-ship"></i> <strong>{{trans('models.port')}}</strong></p>
 							<p> {{$booking->get('nombrePuerto')}} </p>
 							<p><i class="fa fa-anchor"></i> <strong>{{trans('models.dock')}}</strong></p>
-							<p> {{$dock->get('name')}} </p>
+							<p> {{$dock->get('name')}}  <span class="label label-default">{{$dock->get('codigo')}}</span></p>
 							<ul class="list-unstyled">
 								<li><strong>{{trans('models.fields.beam')}}: </strong> {{$dock->get('manga')}}</li>
 								<li><strong>{{trans('models.fields.length')}}: </strong> {{$dock->get('eslora')}}</li>

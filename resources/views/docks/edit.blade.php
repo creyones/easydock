@@ -33,15 +33,15 @@
 					<hr/>
 					@if (!Auth::user()->hasRole('provider'))
 					<div class="form-group">
-						{!!Form::Label('providers', trans('models.provider'), ['class'=>'col-sm-2 control-label']) !!}
+						{!!Form::Label('provider', trans('models.provider'), ['class'=>'col-sm-2 control-label']) !!}
 						<div class="col-sm-8">
-							{!! Form::select('providers', $providers, $provider->get('username'), ['class'=>'form-control']) !!}
+							{!! Form::select('provider', $providers, $provider->get('username'), ['class'=>'form-control']) !!}
 						</div>
 					</div>
 					<div class="form-group">
-						{!!Form::Label('ports', trans('models.port'), ['class'=>'col-sm-2 control-label']) !!}
+						{!!Form::Label('port', trans('models.port'), ['class'=>'col-sm-2 control-label']) !!}
 						<div class="col-sm-8">
-							{!! Form::select('ports', $ports, $port->get('name'), ['class'=>'form-control']) !!}
+							{!! Form::select('port', $ports, $port->get('name'), ['class'=>'form-control']) !!}
 						</div>
 					</div>
 					<hr/>

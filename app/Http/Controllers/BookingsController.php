@@ -34,17 +34,19 @@ class BookingsController extends Controller {
 	{
 		$current_user = Auth::user();
 
-		//Query Docks
-		$query = new ParseQuery('Solicitudes');
-		$query->select(['nombrePuerto', 'userRelation', 'fechaInicio', 'fechaFinal']);
-		$query->ascending('createdAt');
-
 		if ($current_user->hasRole('admin') || $current_user->hasRole('owner')){
+			//Query Docks
+			$query = new ParseQuery('Solicitudes');
+			$query->select(['nombrePuerto', 'userRelation', 'fechaInicio', 'fechaFinal']);
+			$query->ascending('createdAt');
 			$bookings = $query->find();
 			return view('bookings.index', compact('bookings'));
 		}
 		else if ($current_user->hasRole('provider')) {
 			$bookings = $this->scopeProvider("*");
+			if ($bookings && count($bookings) <= 0) {
+				return view('bookings.index')->withErrors(trans('validation.custom.not-found'));
+			}
 			return view('bookings.index', compact('bookings'));
 		}
 		else
@@ -477,17 +479,21 @@ class BookingsController extends Controller {
 		//Related docks to provider
 		$queries = [];
 		$results = $docks->find();
-		foreach ($results as $dock) {
-			$query = new ParseQuery('Solicitudes');
-			$query->equalTo('atraqueRelation', $dock);
-			if($id != '*') {
-				$query->equalTo('objectId', $id);
+		if (count($results) > 0) {
+			foreach ($results as $dock) {
+				$query = new ParseQuery('Solicitudes');
+				$query->equalTo('atraqueRelation', $dock);
+				if($id != '*') {
+					$query->equalTo('objectId', $id);
+				}
+				array_push($queries, $query);
 			}
-			array_push($queries, $query);
+			//Query bookings with or condition
+			return ParseQuery::orQueries($queries)->find();
 		}
-		//Query bookings with or condition
-		$orQuery = ParseQuery::orQueries($queries);
-		return $orQuery->find();
+		else {
+			return array();
+		}
 	}
 
 	private function notify($booking, $action, $recipient = 'user') {

@@ -32,22 +32,34 @@
 					</div>
 					<hr/>
 					<div class="form-group">
+					  {!!Form::Label('user', trans('models.user'), ['class'=>'col-sm-2 control-label']) !!}
+					  <div class="col-sm-8">
+					    {!! Form::text('user', $user->get('username'), ['class'=>'form-control', 'disabled' => 'true']) !!}
+					  </div>
+					</div>
+					<div class="form-group">
+					  {!!Form::Label('email', trans('models.fields.email'), ['class'=>'col-sm-2 control-label']) !!}
+					  <div class="col-sm-8">
+					    {!! Form::text('email', $user->get('email'), ['class'=>'form-control', 'disabled' => 'true']) !!}
+					  </div>
+					</div>
+					<hr/>
+					<div class="form-group">
 					  {!!Form::Label('port', trans('models.port'), ['class'=>'col-sm-2 control-label']) !!}
 					  <div class="col-sm-8">
 					    {!! Form::text('port', $booking->get('nombrePuerto'), ['class'=>'form-control', 'disabled' => 'true']) !!}
 					  </div>
 					</div>
 					<div class="form-group">
-					  {!!Form::Label('docks', trans('models.dock'), ['class'=>'col-sm-2 control-label']) !!}
+					  {!!Form::Label('dock', trans('models.dock'), ['class'=>'col-sm-2 control-label']) !!}
 					  <div class="col-sm-8">
-					    {!! Form::text('docks', $dock->get('name'), ['class'=>'form-control', 'disabled' => 'true']) !!}
+					    {!! Form::text('dock', $dock->get('name'), ['class'=>'form-control', 'disabled' => 'true']) !!}
 					  </div>
 					</div>
-					<hr/>
 					<div class="form-group">
-					  {!!Form::Label('users', trans('models.user'), ['class'=>'col-sm-2 control-label']) !!}
+					  {!!Form::Label('code', trans('models.fields.code'), ['class'=>'col-sm-2 control-label']) !!}
 					  <div class="col-sm-8">
-					    {!! Form::text('users', $user->get('username'), ['class'=>'form-control', 'disabled' => 'true']) !!}
+					    {!! Form::text('code', $dock->get('codigo'), ['class'=>'form-control', 'disabled' => 'true']) !!}
 					  </div>
 					</div>
 					<hr/>

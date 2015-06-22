@@ -1,6 +1,7 @@
 <?php namespace App\Http\Requests;
 
 use App\Http\Requests\Request;
+use Illuminate\Support\Facades\Auth;
 
 class DockRequest extends Request {
 
@@ -23,6 +24,18 @@ class DockRequest extends Request {
 	 */
 	public function rules()
 	{
+		if (Auth::user()->hasRole('provider'))
+  	{
+    	// if current user is provider
+    	$provider_rule = '';
+			$port_rule = '';
+  	}
+  	else
+  	{
+    	$provider_rule = 'required|min:4';
+			$port_rule = 'required|min:6';
+  	}
+
 		return [
 			//
 			'name' => 'required|min:8|max:40',
@@ -34,8 +47,8 @@ class DockRequest extends Request {
 			'beam' => 'required',
 			'length' => 'required',
 			'draft' => 'required',
-			'providers' => 'required|min:6',
-			'ports' => 'required|min:6'
+			'provider' => $provider_rule,
+			'port' => $port_rule
 		];
 	}
 

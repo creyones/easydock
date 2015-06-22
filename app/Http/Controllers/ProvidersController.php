@@ -110,6 +110,8 @@ class ProvidersController extends Controller {
 		$provider->set('username', $request->get('username'));
 		$provider->set('email', $request->get('email'));
 		$provider->set('password', $request->get('password'));
+		//Set Port Relation
+		$this->setPort($provider, $request->get('port'));
 
 		//Create Laravel Profile
 		$profile = new User;
@@ -188,10 +190,7 @@ class ProvidersController extends Controller {
 			$provider->set('username', $request->get('username'));
 			$provider->set('password', bcrypt($request->get('password')));
 			//Set Port Relation
-			$query = new ParseQuery('Puertos');
-			$query->equalTo("name", $request->get('port'));
-			$port = $query->find()[0];
-			$provider->getRelation("puertoRelation")->add($port);
+			$this->setPort($provider, $request->get('port'));
 
 			//Update Laravel Profile
 			$profile = User::where('username', '=', $provider->get('username'))->first();
@@ -273,6 +272,13 @@ class ProvidersController extends Controller {
 		{
 			return redirect('providers');
 		}
+	}
+
+	private function setPort($provider, $name) {
+		$query = new ParseQuery('Puertos');
+		$query->equalTo("name", $name);
+		$port = $query->find()[0];
+		$provider->getRelation("puertoRelation")->add($port);
 	}
 
 	private function listPorts()

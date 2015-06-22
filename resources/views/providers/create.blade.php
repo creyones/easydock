@@ -34,6 +34,19 @@
 					</div>
 					<hr/>
 					<div class="form-group">
+						{!!Form::Label('port', trans('models.port'), ['class'=>'col-sm-2 control-label']) !!}
+						<div class="col-sm-8">
+							{!! Form::select('port', $ports, null, ['class'=>'form-control']) !!}
+						</div>
+					</div>
+					<div class="form-group">
+						{!!Form::Label('role', trans('models.role'), ['class'=>'col-sm-2 control-label']) !!}
+						<div class="col-sm-8">
+							{!! Form::text('role', 'Provider', ['class'=>'form-control', 'disabled' => 'disabled']) !!}
+						</div>
+					</div>
+					<hr/>
+					<div class="form-group">
 						{!!Form::Label('firstname', trans('models.fields.firstname'), ['class'=>'col-sm-2 control-label']) !!}
 						<div class="col-sm-8">
 							{!! Form::text('firstname', '', ['class'=>'form-control']) !!}

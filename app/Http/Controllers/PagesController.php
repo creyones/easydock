@@ -65,12 +65,18 @@ class PagesController extends Controller {
 			//Related docks to provider
 			$queries = [];
 			$results = $docks->find();
-			foreach ($results as $dock) {
-				$query = new ParseQuery('Solicitudes');
-				$query->equalTo('atraqueRelation', $dock);
-				array_push($queries, $query);
+
+			if(count($results) > 0) {
+				foreach ($results as $dock) {
+					$query = new ParseQuery('Solicitudes');
+					$query->equalTo('atraqueRelation', $dock);
+					array_push($queries, $query);
+				}
+				$bookings = ParseQuery::orQueries($queries);
 			}
-			$bookings = ParseQuery::orQueries($queries);
+			else {
+				$bookings = array();
+			}
 
 			return view('home', compact('docks', 'bookings'));
 		}

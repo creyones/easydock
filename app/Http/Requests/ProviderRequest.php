@@ -25,18 +25,21 @@ class ProviderRequest extends Request {
   	{
     	// Update operation, exclude the record with id from the validation:
     	$email_rule = 'required|email';
+			$password_rule = '';
   	}
   	else
   	{
-    	// Create operation. There is no id yet.
+    	// Store operation. There is no id yet.
     	$email_rule = 'required|email|unique:users,email';
+			$password_rule = 'required|min:8';
   	}
 
 		return [
 			//
 			'email' => $email_rule,
-			'username' => 'required|min:6',
-			'password' => 'required|min:8'
+			'username' => 'required|min:4',
+			'password' => $password_rule,
+			'port' = 'required'
 		];
 	}
 
