@@ -67,7 +67,7 @@ class ProvidersController extends Controller {
 			//No results
 			if (count($providers) <= 0)
 			{
-				return view('providers.show')->withErrors(trans('validation.custom.not-found'));
+				return view('providers.show')->withErrors(trans('messages.providers.not-found'));
 			}
 
 			$provider = $providers[0];
@@ -136,7 +136,7 @@ class ProvidersController extends Controller {
 		try {
 			$provider->save();
 			return redirect('providers')->with([
-				'flash_message' => trans('messages.provider_created'),
+				'flash_message' => trans('messages.providers.created'),
 				'flash_message_important' => true
 				]);
 			// Hooray! Let them use the app now.
@@ -207,16 +207,16 @@ class ProvidersController extends Controller {
 				$provider->save();
 
 				return redirect('providers')->with([
-					'flash_message' => trans('messages.provider_updated'),
+					'flash_message' => trans('messages.providers.updated'),
 					'flash_message_important' => true
 					]);
 
 			} catch (ParseException $ex) {
 				if ($ex->getCode() == 101){
-					return redirect()->back()->withErrors(trans('validation.custom.not-found'));
+					return redirect()->back()->withErrors(trans('messages.providers.not-found'));
 				}
 				else {
-					return redirect()->back()->withErrors(trans('validation.custom.parse') . $ex->getMessage());
+					return redirect()->back()->withErrors(trans('validation.custom.parse.save') . $ex->getMessage());
 				}
 			}
 		}
@@ -265,7 +265,7 @@ class ProvidersController extends Controller {
 
 			} catch (ParseException $ex) {
 
-				return redirect()->back()->withErrors(trans('validation.custom.parse') . $ex->getMessage());
+				return redirect()->back()->withErrors(trans('validation.custom.parse.delete') . $ex->getMessage());
 			}
 		}
 		else

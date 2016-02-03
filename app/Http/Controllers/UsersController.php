@@ -69,7 +69,7 @@ class UsersController extends Controller {
 		try {
 			$user->signUp();
 			return redirect('users')->with([
-				'flash_message' => trans('messages.user_created'),
+				'flash_message' => trans('messages.users.created'),
 				'flash_message_important' => true
 				]);
 			// Hooray! Let them use the app now.
@@ -84,7 +84,7 @@ class UsersController extends Controller {
 				return redirect()->back()->withErrors(trans('validation.custom.email.unique'));
 			}
 			else{
-				return redirect()->back()->withErrors(trans('validation.custom.parse'));
+				return redirect()->back()->withErrors(trans('validation.custom.parse.save'));
 			}
 		}
 	}
@@ -104,7 +104,7 @@ class UsersController extends Controller {
 			//No results
 			if (count($users) <= 0)
 			{
-				return view('users.show')->withErrors(trans('validation.custom.not-found'));
+				return view('users.show')->withErrors(trans('validation.users.not-found'));
 			}
 
 			$user = $users[0];
@@ -153,7 +153,7 @@ class UsersController extends Controller {
 			//$result = ParseCloud::run('updateUser', ['objectId', $id], true);
 
 			return redirect('users')->with([
-				'flash_message' => trans('messages.user_updated'),
+				'flash_message' => trans('messages.users.updated'),
 				'flash_message_important' => true
 				]);
 		}
@@ -177,7 +177,7 @@ class UsersController extends Controller {
 			//dd($id);
 
 			return redirect('users')->with([
-				'flash_message' => trans('messages.user_deleted'),
+				'flash_message' => trans('messages.users.deleted'),
 				'flash_message_important' => true
 				]);
 		}

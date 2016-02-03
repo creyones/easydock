@@ -81,7 +81,7 @@
 							<tr>
 								<td>{{ $dock->get('name') }}</td>
 								<td class="small">{{ str_limit($dock->get('detailText'), 50, '...') }}</td>
-								<td>{{ $dock->get('precio') }}{{trans('messages.price_per_day')}}</td>
+								<td>{{ $dock->get('precio') }}{{trans('messages.price-per-day')}}</td>
 								<td>{{ $dock->get('vendedorRelation')->getQuery()->find()[0]->get('username') }}</td>
 								<td>{{ $dock->getCreatedAt()->format('Y-m-d H:i:s') }}</td>
 								<td><a class="btn btn-xs btn-primary" href={{ route('docks.edit', $dock->getObjectId()) }}><i class="fa fa-pencil-square-o"></i></a></td>

@@ -87,7 +87,7 @@ class DocksController extends Controller {
 			//No results
 			if (count($docks) <= 0)
 			{
-				return view('docks.show')->withErrors(trans('validation.custom.not-found'));
+				return view('docks.show')->withErrors(trans('messages.docks.not-found'));
 			}
 
 			$dock = $docks[0];
@@ -145,7 +145,7 @@ class DocksController extends Controller {
 
 		}
 		else {
-			return redirect()->back()->withErrors(trans('validation.custom.not-found'));
+			return redirect()->back()->withErrors(trans('messages.docks.not-found'));
 		}
 
 		$filepath = public_path('img') . "/" . $file->getClientOriginalName();
@@ -207,7 +207,7 @@ class DocksController extends Controller {
 			$this->createProducts($dock, $begin, $end, floatval($request->get('price')));
 
 			return redirect('docks')->with([
-				'flash_message' => trans('messages.dock_created'),
+				'flash_message' => trans('messages.docks.created'),
 				'flash_message_important' => true
 				]);
 			// Hooray! Let them use the app now.
@@ -244,7 +244,7 @@ class DocksController extends Controller {
 			}
 			catch (ParseException $ex) {
 				if ($ex->getCode() == 101){
-					return redirect()->back()->withErrors(trans('validation.custom.not-found'));
+					return redirect()->back()->withErrors(trans('messages.docks.not-found'));
 				}
 			}
 		}
@@ -378,16 +378,16 @@ class DocksController extends Controller {
 				$dock->save();
 
 				return redirect('docks')->with([
-					'flash_message' => trans('messages.dock_updated'),
+					'flash_message' => trans('messages.docks.updated'),
 					'flash_message_important' => true
 					]);
 
 			} catch (ParseException $ex) {
 				if ($ex->getCode() == 101){
-					return redirect()->back()->withErrors(trans('validation.custom.not-found'));
+					return redirect()->back()->withErrors(trans('messages.docks.not-found'));
 				}
 				else {
-					return redirect()->back()->withErrors(trans('validation.custom.parse') . $ex->getMessage());
+					return redirect()->back()->withErrors(trans('validation.custom.parse.save') . $ex->getMessage());
 				}
 			}
 		}
@@ -427,13 +427,13 @@ class DocksController extends Controller {
 				$dock->destroy();
 
 				return redirect('docks')->with([
-					'flash_message' => trans('messages.dock_deleted'),
+					'flash_message' => trans('messages.docks.deleted'),
 					'flash_message_important' => true
 					]);
 
 			} catch (ParseException $ex) {
 
-				return redirect()->back()->withErrors(trans('validation.custom.parse') . $ex->getMessage());
+				return redirect()->back()->withErrors(trans('messages.docks.parse') . $ex->getMessage());
 			}
 		}
 		else

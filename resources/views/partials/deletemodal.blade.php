@@ -7,7 +7,7 @@
         <h4 class="modal-title" id="deleteModalLabel"><i class="fa fa-trash"></i> {{trans('views.delete_'.$model)}} <span class="label label-default"></span></h4>
       </div>
       <div class="modal-body">
-        <p class="">{{trans('messages.confirm_delete_'.$model)}}</p>
+        <p class="">{{trans('messages.'.$model.'s.confirm-delete')}}</p>
       </div>
       <div class="modal-footer">
         {!! Form::open(['method'=> 'DELETE', 'action' => [$controller.'@destroy', $id], 'class' => 'form-horizontal','role'=>'form']) !!}

@@ -36,7 +36,7 @@
 							<p><i class="fa fa-file-text-o"></i> <strong>{{trans('models.fields.details')}}</strong></p>
 							<p> {{$dock->get('detailText')}} </p>
 							<p><i class="fa fa-money"></i> <strong>{{trans('models.fields.price')}}</strong></p>
-							<p> {{$dock->get('precio')}} {{trans('messages.price_per_day')}}</p>
+							<p> {{$dock->get('precio')}} {{trans('messages.price-per-day')}}</p>
 							<p><i class="fa fa-calendar"></i> <strong>{{trans('models.fields.available')}}</strong></p>
 							<p>{{trans('models.fields.from')}}: <span>{{$dock->get('fechaInicio')->format('d/m/Y')}}</span></p>
 							<p>{{trans('models.fields.until')}}: <span>{{$dock->get('fechaFinal')->format('d/m/Y')}}</span></p>

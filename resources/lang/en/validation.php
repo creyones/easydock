@@ -92,8 +92,10 @@ return [
 		'email' => [
 			'unique' => 'The email has already been taken.',
 		],
-		'not-found' => 'The object has not been found',
-		'parse' => 'There has been an error saving a Parse object',
+		'parse' [
+			'save' => 'There has been an error saving a Parse object.',
+			'destroy' => 'There has been an error destroying a Parse object.',
+		],
 	],
 
 	/*

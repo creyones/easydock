@@ -92,8 +92,10 @@ return [
 		'email' => [
 			'unique' => 'La dirección de correo ya está ocupada.',
 		],
-		'not-found' => 'El objeto no se ha encontrado',
-		'parse' => 'Se ha producido un error guardando un objeto en Parse.',
+		'parse' [
+			'save' => 'Se ha producido un error guardando un objeto en Parse.',
+			'destroy' => 'Se ha producido un error eliminando un objeto en Parse.',
+		],
 	],
 
 	/*

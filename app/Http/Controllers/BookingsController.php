@@ -15,6 +15,8 @@ use Parse\ParseQuery;
 use Parse\ParseUser;
 use Parse\ParseRelation;
 use Parse\ParseException;
+use Parse\ParseInstallation;
+use Parse\ParsePush;
 
 Use Carbon\Carbon;
 
@@ -45,7 +47,7 @@ class BookingsController extends Controller {
 		else if ($current_user->hasRole('provider')) {
 			$bookings = $this->scopeProvider("*");
 			if ($bookings && count($bookings) <= 0) {
-				return view('bookings.index')->withErrors(trans('validation.custom.not-found'));
+				return view('bookings.index')->withErrors(trans('messages.bookings.not-found'));
 			}
 			return view('bookings.index', compact('bookings'));
 		}
@@ -71,7 +73,7 @@ class BookingsController extends Controller {
 
 			//No results
 			if ($bookings && count($bookings) <= 0) {
-				return view('bookings.show')->withErrors(trans('validation.custom.not-found'));
+				return view('bookings.show')->withErrors(trans('messages.bookings.not-found'));
 			}
 
 			//Query related Products
@@ -98,7 +100,7 @@ class BookingsController extends Controller {
 		$docks = $this->listDocks();
 		$users = $this->listUsers();
 
-		//TODO create booking view
+		//TODO create new booking view
 
 		return view('bookings.create', compact('docks', 'users'));
 	}
@@ -153,7 +155,7 @@ class BookingsController extends Controller {
 			$this->notify($booking, 'store', 'provider');
 
 			return redirect('bookings')->with([
-				'flash_message' => trans('messages.booking_created'),
+				'flash_message' => trans('messages.bookings.created'),
 				'flash_message_important' => true
 				]);
 			// Hooray! Let them use the app now.
@@ -180,7 +182,7 @@ class BookingsController extends Controller {
 
 			//No results
 			if ($bookings && count($bookings) <= 0) {
-				return view('bookings.show')->withErrors(trans('validation.custom.not-found'));
+				return view('bookings.show')->withErrors(trans('messages.bookings.not-found'));
 			}
 
 			try {
@@ -196,7 +198,7 @@ class BookingsController extends Controller {
 			}
 			catch (ParseException $ex) {
 				if ($ex->getCode() == 101){
-					return redirect()->back()->withErrors(trans('validation.custom.not-found'));
+					return redirect()->back()->withErrors(trans('messages.bookings.not-found'));
 				}
 			}
 		}
@@ -266,7 +268,7 @@ class BookingsController extends Controller {
 					//Log::info('Restore old products');
 					$this->bookProducts($booking, $pfrom, $puntil);
 
-					return redirect()->back()->withErrors(trans('validation.custom.not-available'));
+					return redirect()->back()->withErrors(trans('messages.bookings.not-available'));
 				}
 
 				$modified = true;
@@ -282,7 +284,6 @@ class BookingsController extends Controller {
 				else {
 					$this->confirmProducts($booking, false);
 				}
-
 				$modified = true;
 			}
 
@@ -300,7 +301,7 @@ class BookingsController extends Controller {
 					$this->notify($booking, 'update', 'both');
 				}
 				else {
-					return redirect()->back()->withErrors(trans('validation.custom.not-modified'));
+					return redirect()->back()->withErrors(trans('messages.bookings.not-modified'));
 				}
 
 				return redirect('bookings')->with([
@@ -310,10 +311,10 @@ class BookingsController extends Controller {
 
 			} catch (ParseException $ex) {
 				if ($ex->getCode() == 101){
-					return redirect()->back()->withErrors(trans('validation.custom.not-found'));
+					return redirect()->back()->withErrors(trans('messages.bookings.not-found'));
 				}
 				else {
-					return redirect()->back()->withErrors(trans('validation.custom.parse') . $ex->getMessage());
+					return redirect()->back()->withErrors(trans('validation.custom.parse.save') . $ex->getMessage());
 				}
 			}
 		}
@@ -540,6 +541,23 @@ class BookingsController extends Controller {
 				$contact = $provider->get('email');
 				$intro = trans('emails.user.update-booking-intro');
 				$text = trans('emails.user.update-booking-text');
+
+				/* TODO: enable push
+				//Send push notification to user
+				$userQuery = $booking->get('userRelation')->getQuery();
+				// Find devices associated with these users
+				$pushQuery = ParseInstallation::query();
+				$pushQuery->matchesQuery('user', $userQuery);
+				$pushQuery->equalTo('deviceType', 'ios');
+
+				//dd($pushQuery);
+				// Send push notification to query
+				ParsePush::send(array(
+					"where" => $pushQuery,
+					"data" => array(
+						"alert" => $intro
+					)
+				));*/
 			}
 
 		}

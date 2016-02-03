@@ -63,7 +63,7 @@ class ProfileController extends Controller {
 		$user->save();
 
 		return view('pages.profile', compact('user'))->with([
-			'flash_message' => trans('messages.user_updated'),
+			'flash_message' => trans('messages.uses.updated'),
 			'flash_message_important' => true
 			]);;
 	}

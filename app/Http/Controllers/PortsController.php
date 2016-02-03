@@ -66,7 +66,7 @@ class PortsController extends Controller {
 			//No results
 			if (count($ports) <= 0)
 			{
-				return view('ports.show')->withErrors(trans('validation.custom.not-found'));
+				return view('ports.show')->withErrors(trans('messages.ports.not-found'));
 			}
 
 			$port = $ports[0];
@@ -105,7 +105,7 @@ class PortsController extends Controller {
 		try {
 			$port->save();
 			return redirect('ports')->with([
-				'flash_message' => trans('messages.port_created'),
+				'flash_message' => trans('messages.ports.created'),
 				'flash_message_important' => true
 				]);
 			// Hooray! Let them use the app now.
@@ -155,16 +155,16 @@ class PortsController extends Controller {
 				$port->save();
 
 				return redirect('ports')->with([
-					'flash_message' => trans('messages.port_updated'),
+					'flash_message' => trans('messages.ports.updated'),
 					'flash_message_important' => true
 					]);
 
 			} catch (ParseException $ex) {
 				if ($ex->getCode() == 101){
-					return redirect()->back()->withErrors(trans('validation.custom.not-found'));
+					return redirect()->back()->withErrors(trans('messages.ports.not-found'));
 				}
 				else {
-					return redirect()->back()->withErrors(trans('validation.custom.parse') . $ex->getMessage());
+					return redirect()->back()->withErrors(trans('validation.custom.parse.save') . $ex->getMessage());
 				}
 			}
 		}
@@ -191,7 +191,7 @@ class PortsController extends Controller {
 				$port->destroy();
 
 				return redirect('ports')->with([
-					'flash_message' => trans('messages.port_deleted'),
+					'flash_message' => trans('messages.ports.deleted'),
 					'flash_message_important' => true
 					]);
 
