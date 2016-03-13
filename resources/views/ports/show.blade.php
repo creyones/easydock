@@ -29,7 +29,7 @@
 					<div class="row">
 						<hr/>
 						<div class="col-sm-3">
-							<p><i class="fa fa-ship"></i> <strong>{{trans('models.fields.name')}}</strong></p>
+							<p><i class="fa fa-bookmark-o"></i> <strong>{{trans('models.fields.name')}}</strong></p>
 							<p> {{$port->get('name')}} </p>
 						</div>
 						<div class="col-sm-3">
@@ -43,6 +43,45 @@
 						<div class="col-sm-3">
 							<p><i class="fa fa-map-marker"></i> <strong>{{trans('models.fields.longitude')}}</strong></p>
 							<p> {{$port->get('longitude')}} </p>
+						</div>
+					</div>
+					<div class="row">
+						<hr/>
+						<div class="col-sm-12">
+							<p><i class="fa fa-list-ul"></i> <strong>{{trans('models.fields.services')}}</strong></p>
+							<label for="water" class="col-sm-3 control-label control-label-left">
+							  {!!Form::checkbox('water', 1, $port->get('agua'), ['disabled' => 'disabled']) !!} {{trans('models.fields.water')}}
+							</label>
+							<label for="power" class="col-sm-3 control-label control-label-left">
+							  {!!Form::checkbox('power', 1, $port->get('electricidad'), ['disabled' => 'disabled']) !!} {{trans('models.fields.power')}}
+							</label>
+							<label for="gas" class="col-sm-3 control-label control-label-left">
+							  {!!Form::checkbox('gas', 1, $port->get('gasolinera'), ['disabled' => 'disabled']) !!} {{trans('models.fields.gas')}}
+							</label>
+							<label for="naval" class="col-sm-3 control-label control-label-left">
+							  {!!Form::checkbox('naval', 1, $port->get('marineros'), ['disabled' => 'disabled']) !!} {{trans('models.fields.naval')}}
+							</label>
+							<label for="radio" class="col-sm-3 control-label control-label-left">
+							  {!!Form::checkbox('radio', 1, $port->get('radio'), ['disabled' => 'disabled']) !!} {{trans('models.fields.radio')}}
+							</label>
+							<label for="restaurant" class="col-sm-3 control-label control-label-left">
+							  {!!Form::checkbox('restaurant', 1, $port->get('restaurantes'), ['disabled' => 'disabled']) !!} {{trans('models.fields.restaurant')}}
+							</label>
+							<label for="locker" class="col-sm-3 control-label control-label-left">
+							  {!!Form::checkbox('locker', 1, $port->get('taquillas'), ['disabled' => 'disabled']) !!} {{trans('models.fields.locker')}}
+							</label>
+							<label for="lockerroom" class="col-sm-3 control-label control-label-left">
+							  {!!Form::checkbox('lockerroom', 1, $port->get('vestuarios'), ['disabled' => 'disabled']) !!} {{trans('models.fields.locker-room')}}
+							</label>
+							<label for="accomodation" class="col-sm-3 control-label control-label-left">
+							  {!!Form::checkbox('accomodation', 1, $port->get('hoteles'), ['disabled' => 'disabled']) !!} {{trans('models.fields.accomodation')}}
+							</label>
+							<label for="surveillance" class="col-sm-3 control-label control-label-left">
+							  {!!Form::checkbox('surveillance', 1, $port->get('vigilancia'), ['disabled' => 'disabled']) !!} {{trans('models.fields.surveillance')}}
+							</label>
+							<label for="wifi" class="col-sm-3 control-label control-label-left">
+							  {!!Form::checkbox('wifi', 1, $port->get('wifi'), ['disabled' => 'disabled']) !!} {{trans('models.fields.wifi')}}
+							</label>
 						</div>
 					</div>
 				</div>

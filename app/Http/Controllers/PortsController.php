@@ -71,7 +71,7 @@ class PortsController extends Controller {
 
 			$port = $ports[0];
 
-			//Query related Docks
+			//Query related ports
 			$relQuery = new ParseQuery('Atraques');
 			$relQuery->matchesQuery('puertoRelation', $query);
 
@@ -101,6 +101,18 @@ class PortsController extends Controller {
 		$port->set('province', $request->get('provinces'));
 		$port->set('latitude', floatval($request->get('latitude')));
 		$port->set('longitude', floatval($request->get('longitude')));
+		//Set port services
+		$port->set('agua', $request->get('water') == '1' ? true : false);
+		$port->set('electricidad', $request->get('power') == '1' ? true : false);
+		$port->set('gasolinera', $request->get('gas') == '1' ? true : false);
+		$port->set('marineros', $request->get('naval') == '1' ? true : false);
+		$port->set('radio', $request->get('radio') == '1' ? true : false);
+		$port->set('restaurantes', $request->get('restaurant') == '1' ? true : false);
+		$port->set('taquillas', $request->get('locker') == '1' ? true : false);
+		$port->set('vestuarios', $request->get('lockerroom') == '1' ? true : false);
+		$port->set('hoteles', $request->get('accomodation') == '1' ? true : false);
+		$port->set('vigilancia', $request->get('surveillance') == '1' ? true : false);
+		$port->set('wifi', $request->get('wifi') == '1' ? true : false);
 
 		try {
 			$port->save();
@@ -149,6 +161,18 @@ class PortsController extends Controller {
 			$port->set('province', $request->get('provinces'));
 			$port->set('latitude', floatval($request->get('latitude')));
 			$port->set('longitude', floatval($request->get('longitude')));
+			//Update port services
+			$port->set('agua', $request->get('water') == '1' ? true : false);
+			$port->set('electricidad', $request->get('power') == '1' ? true : false);
+			$port->set('gasolinera', $request->get('gas') == '1' ? true : false);
+			$port->set('marineros', $request->get('naval') == '1' ? true : false);
+			$port->set('radio', $request->get('radio') == '1' ? true : false);
+			$port->set('restaurantes', $request->get('restaurant') == '1' ? true : false);
+			$port->set('taquillas', $request->get('locker') == '1' ? true : false);
+			$port->set('vestuarios', $request->get('lockerroom') == '1' ? true : false);
+			$port->set('hoteles', $request->get('accomodation') == '1' ? true : false);
+			$port->set('vigilancia', $request->get('surveillance') == '1' ? true : false);
+			$port->set('wifi', $request->get('wifi') == '1' ? true : false);
 
 			try {
 				//Update Port in Parse

@@ -39,6 +39,46 @@
 						</div>
 					</div>
 					<div class="form-group">
+						<label class="col-sm-2 control-label">
+							{{trans("models.fields.services")}}
+						</label>
+						<div class="col-sm-8">
+							<label for="water" class="col-sm-3 control-label control-label-left">
+								{!!Form::checkbox('water') !!} {{trans('models.fields.water')}}
+							</label>
+							<label for="power" class="col-sm-3 control-label control-label-left">
+								{!!Form::checkbox('power') !!} {{trans('models.fields.power')}}
+							</label>
+							<label for="gas" class="col-sm-3 control-label control-label-left">
+								{!!Form::checkbox('gas') !!} {{trans('models.fields.gas')}}
+							</label>
+							<label for="naval" class="col-sm-3 control-label control-label-left">
+								{!!Form::checkbox('naval') !!} {{trans('models.fields.naval')}}
+							</label>
+							<label for="radio" class="col-sm-3 control-label control-label-left">
+								{!!Form::checkbox('radio') !!} {{trans('models.fields.radio')}}
+							</label>
+							<label for="restaurant" class="col-sm-3 control-label control-label-left">
+								{!!Form::checkbox('restaurant') !!} {{trans('models.fields.restaurant')}}
+							</label>
+							<label for="locker" class="col-sm-3 control-label control-label-left">
+								{!!Form::checkbox('locker') !!} {{trans('models.fields.locker')}}
+							</label>
+							<label for="lockerroom" class="col-sm-3 control-label control-label-left">
+								{!!Form::checkbox('lockerroom') !!} {{trans('models.fields.locker-room')}}
+							</label>
+							<label for="accomodation" class="col-sm-3 control-label control-label-left">
+								{!!Form::checkbox('accomodation') !!} {{trans('models.fields.accomodation')}}
+							</label>
+							<label for="surveillance" class="col-sm-3 control-label control-label-left">
+								{!!Form::checkbox('surveillance') !!} {{trans('models.fields.surveillance')}}
+							</label>
+							<label for="wifi" class="col-sm-3 control-label control-label-left">
+								{!!Form::checkbox('wifi') !!} {{trans('models.fields.wifi')}}
+							</label>
+						</div>
+					</div>
+					<div class="form-group">
 						<div class="col-sm-8 col-sm-offset-2">
 							{!!Form::submit(trans('actions.save'),['class' => 'btn btn-success']) !!}
 							<a href={{ route('ports.index') }} class="btn btn-default">{{ trans('actions.cancel') }}</a>
