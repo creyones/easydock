@@ -1,26 +1,18 @@
-/* =========================================================
- * bootstrap-datepicker.js
- * Repo: https://github.com/eternicode/bootstrap-datepicker/
- * Demo: http://eternicode.github.io/bootstrap-datepicker/
- * Docs: http://bootstrap-datepicker.readthedocs.org/
- * Forked from http://www.eyecon.ro/bootstrap-datepicker
- * =========================================================
- * Started by Stefan Petre; improvements by Andrew Rowls + contributors
+/*!
+ * Datepicker for Bootstrap v1.6.0 (https://github.com/eternicode/bootstrap-datepicker)
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- * http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- * ========================================================= */
-
-(function($, undefined){
+ * Copyright 2012 Stefan Petre
+ * Improvements by Andrew Rowls
+ * Licensed under the Apache License v2.0 (http://www.apache.org/licenses/LICENSE-2.0)
+ */(function(factory){
+    if (typeof define === "function" && define.amd) {
+        define(["jquery"], factory);
+    } else if (typeof exports === 'object') {
+        factory(require('jquery'));
+    } else {
+        factory(jQuery);
+    }
+}(function($, undefined){
 
 	function UTCDate(){
 		return new Date(Date.UTC.apply(Date, arguments));
@@ -40,6 +32,9 @@
 		return function(){
 			return this[method].apply(this, arguments);
 		};
+	}
+	function isValidDate(d) {
+		return d && !isNaN(d.getTime());
 	}
 
 	var DateArray = (function(){
@@ -89,6 +84,7 @@
 	// Picker object
 
 	var Datepicker = function(element, options){
+		$(element).data('datepicker', this);
 		this._process_options(options);
 
 		this.dates = new DateArray();
@@ -104,6 +100,15 @@
 			this.component = false;
 
 		this.picker = $(DPGlobal.template);
+
+		// Checking templates and inserting
+		if (this._check_template(this.o.templates.leftArrow)) {
+			this.picker.find('.prev').html(this.o.templates.leftArrow);
+		}
+		if (this._check_template(this.o.templates.rightArrow)) {
+			this.picker.find('.next').html(this.o.templates.rightArrow);
+		}
+
 		this._buildEvents();
 		this._attachEvents();
 
@@ -121,7 +126,7 @@
 		this.viewMode = this.o.startView;
 
 		if (this.o.calendarWeeks)
-			this.picker.find('tfoot .today, tfoot .clear')
+			this.picker.find('thead .datepicker-title, tfoot .today, tfoot .clear')
 						.attr('colspan', function(i, val){
 							return parseInt(val) + 1;
 						});
@@ -131,6 +136,7 @@
 		this.setStartDate(this._o.startDate);
 		this.setEndDate(this._o.endDate);
 		this.setDaysOfWeekDisabled(this.o.daysOfWeekDisabled);
+		this.setDaysOfWeekHighlighted(this.o.daysOfWeekHighlighted);
 		this.setDatesDisabled(this.o.datesDisabled);
 
 		this.fillDow();
@@ -149,6 +155,44 @@
 	Datepicker.prototype = {
 		constructor: Datepicker,
 
+		_resolveViewName: function(view, default_value){
+			if (view === 0 || view === 'days' || view === 'month') {
+				return 0;
+			}
+			if (view === 1 || view === 'months' || view === 'year') {
+				return 1;
+			}
+			if (view === 2 || view === 'years' || view === 'decade') {
+				return 2;
+			}
+			if (view === 3 || view === 'decades' || view === 'century') {
+				return 3;
+			}
+			if (view === 4 || view === 'centuries' || view === 'millennium') {
+				return 4;
+			}
+			return default_value === undefined ? false : default_value;
+		},
+
+		_check_template: function(tmp){
+			try {
+				// If empty
+				if (tmp === undefined || tmp === "") {
+					return false;
+				}
+				// If no html, everything ok
+				if ((tmp.match(/[<>]/g) || []).length <= 0) {
+					return true;
+				}
+				// Checking if html is fine
+				var jDom = $(tmp);
+				return jDom.length > 0;
+			}
+			catch (ex) {
+				return false;
+			}
+		},
+
 		_process_options: function(opts){
 			// Store raw options for reference
 			this._o = $.extend({}, this._o, opts);
@@ -165,32 +209,13 @@
 			}
 			o.language = lang;
 
-			switch (o.startView){
-				case 2:
-				case 'decade':
-					o.startView = 2;
-					break;
-				case 1:
-				case 'year':
-					o.startView = 1;
-					break;
-				default:
-					o.startView = 0;
-			}
+			// Retrieve view index from any aliases
+			o.startView = this._resolveViewName(o.startView, 0);
+			o.minViewMode = this._resolveViewName(o.minViewMode, 0);
+			o.maxViewMode = this._resolveViewName(o.maxViewMode, 4);
 
-			switch (o.minViewMode){
-				case 1:
-				case 'months':
-					o.minViewMode = 1;
-					break;
-				case 2:
-				case 'years':
-					o.minViewMode = 2;
-					break;
-				default:
-					o.minViewMode = 0;
-			}
-
+			// Check that the start view is between min and max
+			o.startView = Math.min(o.startView, o.maxViewMode);
 			o.startView = Math.max(o.startView, o.minViewMode);
 
 			// true, false, or Number > 0
@@ -202,7 +227,7 @@
 			o.multidateSeparator = String(o.multidateSeparator);
 
 			o.weekStart %= 7;
-			o.weekEnd = ((o.weekStart + 6) % 7);
+			o.weekEnd = (o.weekStart + 6) % 7;
 
 			var format = DPGlobal.parseFormat(o.format);
 			if (o.startDate !== -Infinity){
@@ -210,7 +235,7 @@
 					if (o.startDate instanceof Date)
 						o.startDate = this._local_to_utc(this._zero_time(o.startDate));
 					else
-						o.startDate = DPGlobal.parseDate(o.startDate, format, o.language);
+						o.startDate = DPGlobal.parseDate(o.startDate, format, o.language, o.assumeNearbyYear);
 				}
 				else {
 					o.startDate = -Infinity;
@@ -221,7 +246,7 @@
 					if (o.endDate instanceof Date)
 						o.endDate = this._local_to_utc(this._zero_time(o.endDate));
 					else
-						o.endDate = DPGlobal.parseDate(o.endDate, format, o.language);
+						o.endDate = DPGlobal.parseDate(o.endDate, format, o.language, o.assumeNearbyYear);
 				}
 				else {
 					o.endDate = Infinity;
@@ -235,14 +260,21 @@
 				return parseInt(d, 10);
 			});
 
+			o.daysOfWeekHighlighted = o.daysOfWeekHighlighted||[];
+			if (!$.isArray(o.daysOfWeekHighlighted))
+				o.daysOfWeekHighlighted = o.daysOfWeekHighlighted.split(/[,\s]*/);
+			o.daysOfWeekHighlighted = $.map(o.daysOfWeekHighlighted, function(d){
+				return parseInt(d, 10);
+			});
+
 			o.datesDisabled = o.datesDisabled||[];
 			if (!$.isArray(o.datesDisabled)) {
 				var datesDisabled = [];
-				datesDisabled.push(DPGlobal.parseDate(o.datesDisabled, format, o.language));
+				datesDisabled.push(DPGlobal.parseDate(o.datesDisabled, format, o.language, o.assumeNearbyYear));
 				o.datesDisabled = datesDisabled;
 			}
 			o.datesDisabled = $.map(o.datesDisabled,function(d){
-				return DPGlobal.parseDate(d, format, o.language);
+				return DPGlobal.parseDate(d, format, o.language, o.assumeNearbyYear);
 			});
 
 			var plc = String(o.orientation).toLowerCase().split(/\s+/g),
@@ -284,7 +316,6 @@
 			} else {
 				o.defaultViewDate = UTCToday();
 			}
-			o.showOnFocus = o.showOnFocus !== undefined ? o.showOnFocus : true;
 		},
 		_events: [],
 		_secondaryEvents: [],
@@ -392,9 +423,10 @@
 							this.element.is(e.target) ||
 							this.element.find(e.target).length ||
 							this.picker.is(e.target) ||
-							this.picker.find(e.target).length
+							this.picker.find(e.target).length ||
+							this.picker.hasClass('datepicker-inline')
 						)){
-							$(this.picker).hide();
+							this.hide();
 						}
 					}, this)
 				}]
@@ -439,7 +471,8 @@
 		},
 
 		show: function(){
-			if (this.element.attr('readonly') && this.o.enableOnReadonly === false)
+      var element = this.component ? this.element.find('input') : this.element;
+			if (element.attr('readonly') && this.o.enableOnReadonly === false)
 				return;
 			if (!this.isInline)
 				this.picker.appendTo(this.o.container);
@@ -476,7 +509,7 @@
 			return this;
 		},
 
-		remove: function(){
+		destroy: function(){
 			this.hide();
 			this._detachEvents();
 			this._detachSecondaryEvents();
@@ -550,7 +583,7 @@
 			}
 
 			if (element) {
-				element.val('').change();
+				element.val('');
 			}
 
 			this.update();
@@ -578,16 +611,17 @@
 
 		setDate: alias('setDates'),
 		setUTCDate: alias('setUTCDates'),
+		remove: alias('destroy'),
 
 		setValue: function(){
 			var formatted = this.getFormattedDate();
 			if (!this.isInput){
 				if (this.component){
-					this.element.find('input').val(formatted).change();
+					this.element.find('input').val(formatted);
 				}
 			}
 			else {
-				this.element.val(formatted).change();
+				this.element.val(formatted);
 			}
 			return this;
 		},
@@ -602,11 +636,19 @@
 			}).join(this.o.multidateSeparator);
 		},
 
+		getStartDate: function(){
+			return this.o.startDate;
+		},
+
 		setStartDate: function(startDate){
 			this._process_options({startDate: startDate});
 			this.update();
 			this.updateNavArrows();
 			return this;
+		},
+
+		getEndDate: function(){
+			return this.o.endDate;
 		},
 
 		setEndDate: function(endDate){
@@ -623,6 +665,12 @@
 			return this;
 		},
 
+		setDaysOfWeekHighlighted: function(daysOfWeekHighlighted){
+			this._process_options({daysOfWeekHighlighted: daysOfWeekHighlighted});
+			this.update();
+			return this;
+		},
+
 		setDatesDisabled: function(datesDisabled){
 			this._process_options({datesDisabled: datesDisabled});
 			this.update();
@@ -635,22 +683,26 @@
 			var calendarWidth = this.picker.outerWidth(),
 				calendarHeight = this.picker.outerHeight(),
 				visualPadding = 10,
-				windowWidth = $(this.o.container).width(),
-				windowHeight = $(this.o.container).height(),
-				scrollTop = $(this.o.container).scrollTop(),
-				appendOffset = $(this.o.container).offset();
+				container = $(this.o.container),
+				windowWidth = container.width(),
+				scrollTop = this.o.container === 'body' ? $(document).scrollTop() : container.scrollTop(),
+				appendOffset = container.offset();
 
 			var parentsZindex = [];
 			this.element.parents().each(function(){
 				var itemZIndex = $(this).css('z-index');
 				if (itemZIndex !== 'auto' && itemZIndex !== 0) parentsZindex.push(parseInt(itemZIndex));
 			});
-			var zIndex = Math.max.apply(Math, parentsZindex) + 10;
+			var zIndex = Math.max.apply(Math, parentsZindex) + this.o.zIndexOffset;
 			var offset = this.component ? this.component.parent().offset() : this.element.offset();
 			var height = this.component ? this.component.outerHeight(true) : this.element.outerHeight(false);
 			var width = this.component ? this.component.outerWidth(true) : this.element.outerWidth(false);
 			var left = offset.left - appendOffset.left,
 				top = offset.top - appendOffset.top;
+
+			if (this.o.container !== 'body') {
+				top += scrollTop;
+			}
 
 			this.picker.removeClass(
 				'datepicker-orient-top datepicker-orient-bottom '+
@@ -672,7 +724,7 @@
 				} else if (left + calendarWidth > windowWidth) {
 					// the calendar passes the widow right edge. Align it to component right side
 					this.picker.addClass('datepicker-orient-right');
-					left = offset.left + width - calendarWidth;
+					left += width - calendarWidth;
 				} else {
 					// Default to left
 					this.picker.addClass('datepicker-orient-left');
@@ -682,20 +734,17 @@
 			// auto y orientation is best-situation: top or bottom, no fudging,
 			// decision based on which shows more of the calendar
 			var yorient = this.o.orientation.y,
-				top_overflow, bottom_overflow;
+				top_overflow;
 			if (yorient === 'auto'){
 				top_overflow = -scrollTop + top - calendarHeight;
-				bottom_overflow = scrollTop + windowHeight - (top + height + calendarHeight);
-				if (Math.max(top_overflow, bottom_overflow) === bottom_overflow)
-					yorient = 'top';
-				else
-					yorient = 'bottom';
+				yorient = top_overflow < 0 ? 'bottom' : 'top';
 			}
+
 			this.picker.addClass('datepicker-orient-' + yorient);
 			if (yorient === 'top')
-				top += height;
-			else
 				top -= calendarHeight + parseInt(this.picker.css('padding-top'));
+			else
+				top += height;
 
 			if (this.o.rtl) {
 				var right = windowWidth - (left + width);
@@ -742,12 +791,11 @@
 			}
 
 			dates = $.map(dates, $.proxy(function(date){
-				return DPGlobal.parseDate(date, this.o.format, this.o.language);
+				return DPGlobal.parseDate(date, this.o.format, this.o.language, this.o.assumeNearbyYear);
 			}, this));
 			dates = $.grep(dates, $.proxy(function(date){
 				return (
-					date < this.o.startDate ||
-					date > this.o.endDate ||
+					!this.dateWithinRange(date) ||
 					!date
 				);
 			}, this), true);
@@ -759,6 +807,8 @@
 				this.viewDate = new Date(this.o.startDate);
 			else if (this.viewDate > this.o.endDate)
 				this.viewDate = new Date(this.o.endDate);
+			else
+				this.viewDate = this.o.defaultViewDate;
 
 			if (fromArgs){
 				// setting date by clicking
@@ -773,6 +823,7 @@
 				this._trigger('clearDate');
 
 			this.fill();
+			this.element.change();
 			return this;
 		},
 
@@ -780,25 +831,29 @@
 			var dowCnt = this.o.weekStart,
 				html = '<tr>';
 			if (this.o.calendarWeeks){
-				this.picker.find('.datepicker-days thead tr:first-child .datepicker-switch')
+				this.picker.find('.datepicker-days .datepicker-switch')
 					.attr('colspan', function(i, val){
 						return parseInt(val) + 1;
 					});
-				var cell = '<th class="cw">&#160;</th>';
-				html += cell;
+				html += '<th class="cw">&#160;</th>';
 			}
 			while (dowCnt < this.o.weekStart + 7){
-				html += '<th class="dow">'+dates[this.o.language].daysMin[(dowCnt++)%7]+'</th>';
+				html += '<th class="dow';
+        if ($.inArray(dowCnt, this.o.daysOfWeekDisabled) > -1)
+          html += ' disabled';
+        html += '">'+dates[this.o.language].daysMin[(dowCnt++)%7]+'</th>';
 			}
 			html += '</tr>';
 			this.picker.find('.datepicker-days thead').append(html);
 		},
 
 		fillMonths: function(){
+      var localDate = this._utc_to_local(this.viewDate);
 			var html = '',
 			i = 0;
 			while (i < 12){
-				html += '<span class="month">'+dates[this.o.language].monthsShort[i++]+'</span>';
+        var focused = localDate && localDate.getMonth() === i ? ' focused' : '';
+				html += '<span class="month' + focused + '">' + dates[this.o.language].monthsShort[i++]+'</span>';
 			}
 			this.picker.find('.datepicker-months td').html(html);
 		},
@@ -835,14 +890,11 @@
 			}
 			if (this.dates.contains(date) !== -1)
 				cls.push('active');
-			if (date.valueOf() < this.o.startDate || date.valueOf() > this.o.endDate ||
-				$.inArray(date.getUTCDay(), this.o.daysOfWeekDisabled) !== -1){
+			if (!this.dateWithinRange(date) || this.dateIsDisabled(date)){
 				cls.push('disabled');
 			}
-			if (this.o.datesDisabled.length > 0 &&
-				$.grep(this.o.datesDisabled, function(d){
-					return isUTCEquals(date, d); }).length > 0) {
-				cls.push('disabled', 'disabled-date');
+			if ($.inArray(date.getUTCDay(), this.o.daysOfWeekHighlighted) !== -1){
+				cls.push('highlighted');
 			}
 
 			if (this.range){
@@ -852,8 +904,74 @@
 				if ($.inArray(date.valueOf(), this.range) !== -1){
 					cls.push('selected');
 				}
+				if (date.valueOf() === this.range[0]){
+          cls.push('range-start');
+        }
+        if (date.valueOf() === this.range[this.range.length-1]){
+          cls.push('range-end');
+        }
 			}
 			return cls;
+		},
+
+		_fill_yearsView: function(selector, cssClass, factor, step, currentYear, startYear, endYear, callback){
+			var html, view, year, steps, startStep, endStep, thisYear, i, classes, tooltip, before;
+
+			html      = '';
+			view      = this.picker.find(selector);
+			year      = parseInt(currentYear / factor, 10) * factor;
+			startStep = parseInt(startYear / step, 10) * step;
+			endStep   = parseInt(endYear / step, 10) * step;
+			steps     = $.map(this.dates, function(d){
+				return parseInt(d.getUTCFullYear() / step, 10) * step;
+			});
+
+			view.find('.datepicker-switch').text(year + '-' + (year + step * 9));
+
+			thisYear = year - step;
+			for (i = -1; i < 11; i += 1) {
+				classes = [cssClass];
+				tooltip = null;
+
+				if (i === -1) {
+					classes.push('old');
+				} else if (i === 10) {
+					classes.push('new');
+				}
+				if ($.inArray(thisYear, steps) !== -1) {
+					classes.push('active');
+				}
+				if (thisYear < startStep || thisYear > endStep) {
+					classes.push('disabled');
+				}
+        if (thisYear === this.viewDate.getFullYear()) {
+				  classes.push('focused');
+        }
+
+				if (callback !== $.noop) {
+					before = callback(new Date(thisYear, 0, 1));
+					if (before === undefined) {
+						before = {};
+					} else if (typeof(before) === 'boolean') {
+						before = {enabled: before};
+					} else if (typeof(before) === 'string') {
+						before = {classes: before};
+					}
+					if (before.enabled === false) {
+						classes.push('disabled');
+					}
+					if (before.classes) {
+						classes = classes.concat(before.classes.split(/\s+/));
+					}
+					if (before.tooltip) {
+						tooltip = before.tooltip;
+					}
+				}
+
+				html += '<span class="' + classes.join(' ') + '"' + (tooltip ? ' title="' + tooltip + '"' : '') + '>' + thisYear + '</span>';
+				thisYear += step;
+			}
+			view.find('td').html(html);
 		},
 
 		fill: function(){
@@ -866,17 +984,22 @@
 				endMonth = this.o.endDate !== Infinity ? this.o.endDate.getUTCMonth() : Infinity,
 				todaytxt = dates[this.o.language].today || dates['en'].today || '',
 				cleartxt = dates[this.o.language].clear || dates['en'].clear || '',
-				tooltip;
+				titleFormat = dates[this.o.language].titleFormat || dates['en'].titleFormat,
+				tooltip,
+				before;
 			if (isNaN(year) || isNaN(month))
 				return;
-			this.picker.find('.datepicker-days thead .datepicker-switch')
-						.text(dates[this.o.language].months[month]+' '+year);
+			this.picker.find('.datepicker-days .datepicker-switch')
+						.text(DPGlobal.formatDate(d, titleFormat, this.o.language));
 			this.picker.find('tfoot .today')
 						.text(todaytxt)
 						.toggle(this.o.todayBtn !== false);
 			this.picker.find('tfoot .clear')
 						.text(cleartxt)
 						.toggle(this.o.clearBtn !== false);
+			this.picker.find('thead .datepicker-title')
+						.text(this.o.title)
+						.toggle(this.o.title !== '');
 			this.updateNavArrows();
 			this.fillMonths();
 			var prevMonth = UTCDate(year, month-1, 28),
@@ -884,6 +1007,9 @@
 			prevMonth.setUTCDate(day);
 			prevMonth.setUTCDate(day - (prevMonth.getUTCDay() - this.o.weekStart + 7)%7);
 			var nextMonth = new Date(prevMonth);
+			if (prevMonth.getUTCFullYear() < 100){
+        nextMonth.setUTCFullYear(prevMonth.getUTCFullYear());
+      }
 			nextMonth.setUTCDate(nextMonth.getUTCDate() + 42);
 			nextMonth = nextMonth.valueOf();
 			var html = [];
@@ -911,7 +1037,7 @@
 				clsName.push('day');
 
 				if (this.o.beforeShowDay !== $.noop){
-					var before = this.o.beforeShowDay(this._utc_to_local(prevMonth));
+					before = this.o.beforeShowDay(this._utc_to_local(prevMonth));
 					if (before === undefined)
 						before = {};
 					else if (typeof(before) === 'boolean')
@@ -936,9 +1062,10 @@
 			}
 			this.picker.find('.datepicker-days tbody').empty().append(html.join(''));
 
+			var monthsTitle = dates[this.o.language].monthsTitle || dates['en'].monthsTitle || 'Months';
 			var months = this.picker.find('.datepicker-months')
-						.find('th:eq(1)')
-							.text(year)
+						.find('.datepicker-switch')
+							.text(this.o.maxViewMode < 2 ? monthsTitle : year)
 							.end()
 						.find('span').removeClass('active');
 
@@ -960,41 +1087,58 @@
 			if (this.o.beforeShowMonth !== $.noop){
 				var that = this;
 				$.each(months, function(i, month){
-					if (!$(month).hasClass('disabled')) {
-						var moDate = new Date(year, i, 1);
-						var before = that.o.beforeShowMonth(moDate);
-						if (before === false)
-							$(month).addClass('disabled');
-					}
+          var moDate = new Date(year, i, 1);
+          var before = that.o.beforeShowMonth(moDate);
+					if (before === undefined)
+						before = {};
+					else if (typeof(before) === 'boolean')
+						before = {enabled: before};
+					else if (typeof(before) === 'string')
+						before = {classes: before};
+					if (before.enabled === false && !$(month).hasClass('disabled'))
+					    $(month).addClass('disabled');
+					if (before.classes)
+					    $(month).addClass(before.classes);
+					if (before.tooltip)
+					    $(month).prop('title', before.tooltip);
 				});
 			}
 
-			html = '';
-			year = parseInt(year/10, 10) * 10;
-			var yearCont = this.picker.find('.datepicker-years')
-								.find('th:eq(1)')
-									.text(year + '-' + (year + 9))
-									.end()
-								.find('td');
-			year -= 1;
-			var years = $.map(this.dates, function(d){
-					return d.getUTCFullYear();
-				}),
-				classes;
-			for (var i = -1; i < 11; i++){
-				classes = ['year'];
-				if (i === -1)
-					classes.push('old');
-				else if (i === 10)
-					classes.push('new');
-				if ($.inArray(year, years) !== -1)
-					classes.push('active');
-				if (year < startYear || year > endYear)
-					classes.push('disabled');
-				html += '<span class="' + classes.join(' ') + '">' + year + '</span>';
-				year += 1;
-			}
-			yearCont.html(html);
+			// Generating decade/years picker
+			this._fill_yearsView(
+				'.datepicker-years',
+				'year',
+				10,
+				1,
+				year,
+				startYear,
+				endYear,
+				this.o.beforeShowYear
+			);
+
+			// Generating century/decades picker
+			this._fill_yearsView(
+				'.datepicker-decades',
+				'decade',
+				100,
+				10,
+				year,
+				startYear,
+				endYear,
+				this.o.beforeShowDecade
+			);
+
+			// Generating millennium/centuries picker
+			this._fill_yearsView(
+				'.datepicker-centuries',
+				'century',
+				1000,
+				100,
+				year,
+				startYear,
+				endYear,
+				this.o.beforeShowCentury
+			);
 		},
 
 		updateNavArrows: function(){
@@ -1021,13 +1165,15 @@
 					break;
 				case 1:
 				case 2:
-					if (this.o.startDate !== -Infinity && year <= this.o.startDate.getUTCFullYear()){
+				case 3:
+				case 4:
+					if (this.o.startDate !== -Infinity && year <= this.o.startDate.getUTCFullYear() || this.o.maxViewMode < 2){
 						this.picker.find('.prev').css({visibility: 'hidden'});
 					}
 					else {
 						this.picker.find('.prev').css({visibility: 'visible'});
 					}
-					if (this.o.endDate !== Infinity && year >= this.o.endDate.getUTCFullYear()){
+					if (this.o.endDate !== Infinity && year >= this.o.endDate.getUTCFullYear() || this.o.maxViewMode < 2){
 						this.picker.find('.next').css({visibility: 'hidden'});
 					}
 					else {
@@ -1040,103 +1186,135 @@
 		click: function(e){
 			e.preventDefault();
 			e.stopPropagation();
-			var target = $(e.target).closest('span, td, th'),
-				year, month, day;
-			if (target.length === 1){
-				switch (target[0].nodeName.toLowerCase()){
-					case 'th':
-						switch (target[0].className){
-							case 'datepicker-switch':
-								this.showMode(1);
-								break;
-							case 'prev':
-							case 'next':
-								var dir = DPGlobal.modes[this.viewMode].navStep * (target[0].className === 'prev' ? -1 : 1);
-								switch (this.viewMode){
-									case 0:
-										this.viewDate = this.moveMonth(this.viewDate, dir);
-										this._trigger('changeMonth', this.viewDate);
-										break;
-									case 1:
-									case 2:
-										this.viewDate = this.moveYear(this.viewDate, dir);
-										if (this.viewMode === 1)
-											this._trigger('changeYear', this.viewDate);
-										break;
-								}
-								this.fill();
-								break;
-							case 'today':
-								var date = new Date();
-								date = UTCDate(date.getFullYear(), date.getMonth(), date.getDate(), 0, 0, 0);
 
-								this.showMode(-2);
-								var which = this.o.todayBtn === 'linked' ? null : 'view';
-								this._setDate(date, which);
-								break;
-							case 'clear':
-								this.clearDates();
-								break;
-						}
-						break;
-					case 'span':
-						if (!target.hasClass('disabled')){
-							this.viewDate.setUTCDate(1);
-							if (target.hasClass('month')){
-								day = 1;
-								month = target.parent().find('span').index(target);
-								year = this.viewDate.getUTCFullYear();
-								this.viewDate.setUTCMonth(month);
-								this._trigger('changeMonth', this.viewDate);
-								if (this.o.minViewMode === 1){
-									this._setDate(UTCDate(year, month, day));
-									this.showMode();
-								} else {
-									this.showMode(-1);
-								}
-							}
-							else {
-								day = 1;
-								month = 0;
-								year = parseInt(target.text(), 10)||0;
-								this.viewDate.setUTCFullYear(year);
-								this._trigger('changeYear', this.viewDate);
-								if (this.o.minViewMode === 2){
-									this._setDate(UTCDate(year, month, day));
-								}
-								this.showMode(-1);
-							}
-							this.fill();
-						}
-						break;
-					case 'td':
-						if (target.hasClass('day') && !target.hasClass('disabled')){
-							day = parseInt(target.text(), 10)||1;
-							year = this.viewDate.getUTCFullYear();
-							month = this.viewDate.getUTCMonth();
-							if (target.hasClass('old')){
-								if (month === 0){
-									month = 11;
-									year -= 1;
-								}
-								else {
-									month -= 1;
-								}
-							}
-							else if (target.hasClass('new')){
-								if (month === 11){
-									month = 0;
-									year += 1;
-								}
-								else {
-									month += 1;
-								}
-							}
+			var target, dir, day, year, month, monthChanged, yearChanged;
+			target = $(e.target);
+
+			// Clicked on the switch
+			if (target.hasClass('datepicker-switch')){
+				this.showMode(1);
+			}
+
+			// Clicked on prev or next
+			var navArrow = target.closest('.prev, .next');
+			if (navArrow.length > 0) {
+				dir = DPGlobal.modes[this.viewMode].navStep * (navArrow.hasClass('prev') ? -1 : 1);
+				if (this.viewMode === 0){
+					this.viewDate = this.moveMonth(this.viewDate, dir);
+					this._trigger('changeMonth', this.viewDate);
+				} else {
+					this.viewDate = this.moveYear(this.viewDate, dir);
+					if (this.viewMode === 1){
+						this._trigger('changeYear', this.viewDate);
+					}
+				}
+				this.fill();
+			}
+
+			// Clicked on today button
+			if (target.hasClass('today')){
+				this.showMode(-2);
+				this._setDate(UTCToday(), this.o.todayBtn === 'linked' ? null : 'view');
+			}
+
+			// Clicked on clear button
+			if (target.hasClass('clear')){
+				this.clearDates();
+			}
+
+			if (!target.hasClass('disabled')){
+				// Clicked on a day
+				if (target.hasClass('day')){
+					day = parseInt(target.text(), 10) || 1;
+					year = this.viewDate.getUTCFullYear();
+					month = this.viewDate.getUTCMonth();
+
+					// From last month
+					if (target.hasClass('old')){
+						if (month === 0) {
+							month = 11;
+							year = year - 1;
+							monthChanged = true;
+							yearChanged = true;
+						} else {
+							month = month - 1;
+							monthChanged = true;
+ 						}
+ 					}
+
+					// From next month
+					if (target.hasClass('new')) {
+						if (month === 11){
+							month = 0;
+							year = year + 1;
+							monthChanged = true;
+							yearChanged = true;
+ 						} else {
+							month = month + 1;
+							monthChanged = true;
+ 						}
+					}
+					this._setDate(UTCDate(year, month, day));
+					if (yearChanged) {
+						this._trigger('changeYear', this.viewDate);
+					}
+					if (monthChanged) {
+						this._trigger('changeMonth', this.viewDate);
+					}
+				}
+
+				// Clicked on a month
+				if (target.hasClass('month')) {
+					this.viewDate.setUTCDate(1);
+					day = 1;
+					month = target.parent().find('span').index(target);
+					year = this.viewDate.getUTCFullYear();
+					this.viewDate.setUTCMonth(month);
+					this._trigger('changeMonth', this.viewDate);
+					if (this.o.minViewMode === 1){
+						this._setDate(UTCDate(year, month, day));
+						this.showMode();
+					} else {
+						this.showMode(-1);
+					}
+					this.fill();
+				}
+
+				// Clicked on a year
+				if (target.hasClass('year')
+						|| target.hasClass('decade')
+						|| target.hasClass('century')) {
+					this.viewDate.setUTCDate(1);
+
+					day = 1;
+					month = 0;
+					year = parseInt(target.text(), 10)||0;
+					this.viewDate.setUTCFullYear(year);
+
+					if (target.hasClass('year')){
+						this._trigger('changeYear', this.viewDate);
+						if (this.o.minViewMode === 2){
 							this._setDate(UTCDate(year, month, day));
 						}
-						break;
+					}
+					if (target.hasClass('decade')){
+						this._trigger('changeDecade', this.viewDate);
+						if (this.o.minViewMode === 3){
+							this._setDate(UTCDate(year, month, day));
+						}
+					}
+					if (target.hasClass('century')){
+						this._trigger('changeCentury', this.viewDate);
+						if (this.o.minViewMode === 4){
+							this._setDate(UTCDate(year, month, day));
+						}
+					}
+
+					this.showMode(-1);
+					this.fill();
 				}
 			}
+
 			if (this.picker.is(':visible') && this._focused_from){
 				$(this._focused_from).focus();
 			}
@@ -1169,12 +1347,12 @@
 		_setDate: function(date, which){
 			if (!which || which === 'date')
 				this._toggle_multidate(date && new Date(date));
-			if (!which || which  === 'view')
+			if (!which || which === 'view')
 				this.viewDate = date && new Date(date);
 
 			this.fill();
 			this.setValue();
-			if (!which || which  !== 'view') {
+			if (!which || which !== 'view') {
 				this._trigger('changeDate');
 			}
 			var element;
@@ -1192,9 +1370,20 @@
 			}
 		},
 
+		moveDay: function(date, dir){
+			var newDate = new Date(date);
+			newDate.setUTCDate(date.getUTCDate() + dir);
+
+			return newDate;
+		},
+
+		moveWeek: function(date, dir){
+			return this.moveDay(date, dir * 7);
+		},
+
 		moveMonth: function(date, dir){
-			if (!date)
-				return undefined;
+			if (!isValidDate(date))
+				return this.o.defaultViewDate;
 			if (!dir)
 				return date;
 			var new_date = new Date(date.valueOf()),
@@ -1246,18 +1435,47 @@
 			return this.moveMonth(date, dir*12);
 		},
 
+		moveAvailableDate: function(date, dir, fn){
+			do {
+				date = this[fn](date, dir);
+
+				if (!this.dateWithinRange(date))
+					return false;
+
+				fn = 'moveDay';
+			}
+			while (this.dateIsDisabled(date));
+
+			return date;
+		},
+
+		weekOfDateIsDisabled: function(date){
+			return $.inArray(date.getUTCDay(), this.o.daysOfWeekDisabled) !== -1;
+		},
+
+		dateIsDisabled: function(date){
+			return (
+				this.weekOfDateIsDisabled(date) ||
+				$.grep(this.o.datesDisabled, function(d){
+					return isUTCEquals(date, d);
+				}).length > 0
+			);
+		},
+
 		dateWithinRange: function(date){
 			return date >= this.o.startDate && date <= this.o.endDate;
 		},
 
 		keydown: function(e){
 			if (!this.picker.is(':visible')){
-				if (e.keyCode === 40 || e.keyCode === 27) // allow down to re-show picker
+				if (e.keyCode === 40 || e.keyCode === 27) { // allow down to re-show picker
 					this.show();
+					e.stopPropagation();
+        }
 				return;
 			}
 			var dateChanged = false,
-				dir, newDate, newViewDate,
+				dir, newViewDate,
 				focusDate = this.focusDate || this.viewDate;
 			switch (e.keyCode){
 				case 27: // escape
@@ -1269,68 +1487,55 @@
 					else
 						this.hide();
 					e.preventDefault();
+					e.stopPropagation();
 					break;
 				case 37: // left
-				case 39: // right
-					if (!this.o.keyboardNavigation)
-						break;
-					dir = e.keyCode === 37 ? -1 : 1;
-					if (e.ctrlKey){
-						newDate = this.moveYear(this.dates.get(-1) || UTCToday(), dir);
-						newViewDate = this.moveYear(focusDate, dir);
-						this._trigger('changeYear', this.viewDate);
-					}
-					else if (e.shiftKey){
-						newDate = this.moveMonth(this.dates.get(-1) || UTCToday(), dir);
-						newViewDate = this.moveMonth(focusDate, dir);
-						this._trigger('changeMonth', this.viewDate);
-					}
-					else {
-						newDate = new Date(this.dates.get(-1) || UTCToday());
-						newDate.setUTCDate(newDate.getUTCDate() + dir);
-						newViewDate = new Date(focusDate);
-						newViewDate.setUTCDate(focusDate.getUTCDate() + dir);
-					}
-					if (this.dateWithinRange(newViewDate)){
-						this.focusDate = this.viewDate = newViewDate;
-						this.setValue();
-						this.fill();
-						e.preventDefault();
-					}
-					break;
 				case 38: // up
+				case 39: // right
 				case 40: // down
-					if (!this.o.keyboardNavigation)
+					if (!this.o.keyboardNavigation || this.o.daysOfWeekDisabled.length === 7)
 						break;
-					dir = e.keyCode === 38 ? -1 : 1;
-					if (e.ctrlKey){
-						newDate = this.moveYear(this.dates.get(-1) || UTCToday(), dir);
-						newViewDate = this.moveYear(focusDate, dir);
-						this._trigger('changeYear', this.viewDate);
-					}
-					else if (e.shiftKey){
-						newDate = this.moveMonth(this.dates.get(-1) || UTCToday(), dir);
-						newViewDate = this.moveMonth(focusDate, dir);
-						this._trigger('changeMonth', this.viewDate);
-					}
-					else {
-						newDate = new Date(this.dates.get(-1) || UTCToday());
-						newDate.setUTCDate(newDate.getUTCDate() + dir * 7);
-						newViewDate = new Date(focusDate);
-						newViewDate.setUTCDate(focusDate.getUTCDate() + dir * 7);
-					}
-					if (this.dateWithinRange(newViewDate)){
+					dir = e.keyCode === 37 || e.keyCode === 38 ? -1 : 1;
+          if (this.viewMode === 0) {
+  					if (e.ctrlKey){
+  						newViewDate = this.moveAvailableDate(focusDate, dir, 'moveYear');
+
+  						if (newViewDate)
+  							this._trigger('changeYear', this.viewDate);
+  					}
+  					else if (e.shiftKey){
+  						newViewDate = this.moveAvailableDate(focusDate, dir, 'moveMonth');
+
+  						if (newViewDate)
+  							this._trigger('changeMonth', this.viewDate);
+  					}
+  					else if (e.keyCode === 37 || e.keyCode === 39){
+  						newViewDate = this.moveAvailableDate(focusDate, dir, 'moveDay');
+  					}
+  					else if (!this.weekOfDateIsDisabled(focusDate)){
+  						newViewDate = this.moveAvailableDate(focusDate, dir, 'moveWeek');
+  					}
+          } else if (this.viewMode === 1) {
+            if (e.keyCode === 38 || e.keyCode === 40) {
+              dir = dir * 4;
+            }
+            newViewDate = this.moveAvailableDate(focusDate, dir, 'moveMonth');
+          } else if (this.viewMode === 2) {
+            if (e.keyCode === 38 || e.keyCode === 40) {
+              dir = dir * 4;
+            }
+            newViewDate = this.moveAvailableDate(focusDate, dir, 'moveYear');
+          }
+					if (newViewDate){
 						this.focusDate = this.viewDate = newViewDate;
 						this.setValue();
 						this.fill();
 						e.preventDefault();
 					}
-					break;
-				case 32: // spacebar
-					// Spacebar is used in manually typing dates in some formats.
-					// As such, its behavior should not be hijacked.
 					break;
 				case 13: // enter
+					if (!this.o.forceParse)
+						break;
 					focusDate = this.focusDate || this.dates.get(-1) || this.viewDate;
 					if (this.o.keyboardNavigation) {
 						this._toggle_multidate(focusDate);
@@ -1342,11 +1547,7 @@
 					this.fill();
 					if (this.picker.is(':visible')){
 						e.preventDefault();
-						if (typeof e.stopPropagation === 'function') {
-							e.stopPropagation(); // All modern browsers, IE9+
-						} else {
-							e.cancelBubble = true; // IE6,7,8 ignore "stopPropagation"
-						}
+						e.stopPropagation();
 						if (this.o.autoclose)
 							this.hide();
 					}
@@ -1378,18 +1579,19 @@
 
 		showMode: function(dir){
 			if (dir){
-				this.viewMode = Math.max(this.o.minViewMode, Math.min(2, this.viewMode + dir));
+				this.viewMode = Math.max(this.o.minViewMode, Math.min(this.o.maxViewMode, this.viewMode + dir));
 			}
 			this.picker
 				.children('div')
 				.hide()
 				.filter('.datepicker-' + DPGlobal.modes[this.viewMode].clsName)
-					.css('display', 'block');
+					.show();
 			this.updateNavArrows();
 		}
 	};
 
 	var DateRangePicker = function(element, options){
+		$(element).data('datepicker', this);
 		this.element = $(element);
 		this.inputs = $.map(options.inputs, function(i){
 			return i.jquery ? i[0] : i;
@@ -1427,8 +1629,13 @@
 				return;
 			this.updating = true;
 
-			var dp = $(e.target).data('datepicker'),
-				new_date = dp.getUTCDate(),
+			var dp = $(e.target).data('datepicker');
+
+			if (typeof(dp) === "undefined") {
+				return;
+			}
+
+			var new_date = dp.getUTCDate(),
 				i = $.inArray(e.target, this.inputs),
 				j = i - 1,
 				k = i + 1,
@@ -1515,36 +1722,48 @@
 					// Options priority: js args, data-attrs, locales, defaults
 					opts = $.extend({}, defaults, locopts, elopts, options);
 				if ($this.hasClass('input-daterange') || opts.inputs){
-					var ropts = {
+					$.extend(opts, {
 						inputs: opts.inputs || $this.find('input').toArray()
-					};
-					$this.data('datepicker', (data = new DateRangePicker(this, $.extend(opts, ropts))));
+					});
+					data = new DateRangePicker(this, opts);
 				}
 				else {
-					$this.data('datepicker', (data = new Datepicker(this, opts)));
+					data = new Datepicker(this, opts);
 				}
+				$this.data('datepicker', data);
 			}
 			if (typeof option === 'string' && typeof data[option] === 'function'){
 				internal_return = data[option].apply(data, args);
-				if (internal_return !== undefined)
-					return false;
 			}
 		});
-		if (internal_return !== undefined)
-			return internal_return;
-		else
+
+		if (
+			internal_return === undefined ||
+			internal_return instanceof Datepicker ||
+			internal_return instanceof DateRangePicker
+		)
 			return this;
+
+		if (this.length > 1)
+			throw new Error('Using only allowed for the collection of a single element (' + option + ' function)');
+		else
+			return internal_return;
 	};
 	$.fn.datepicker = datepickerPlugin;
 
 	var defaults = $.fn.datepicker.defaults = {
+		assumeNearbyYear: false,
 		autoclose: false,
 		beforeShowDay: $.noop,
 		beforeShowMonth: $.noop,
+		beforeShowYear: $.noop,
+		beforeShowDecade: $.noop,
+		beforeShowCentury: $.noop,
 		calendarWeeks: false,
 		clearBtn: false,
 		toggleActive: false,
 		daysOfWeekDisabled: [],
+		daysOfWeekHighlighted: [],
 		datesDisabled: [],
 		endDate: Infinity,
 		forceParse: true,
@@ -1552,6 +1771,7 @@
 		keyboardNavigation: true,
 		language: 'en',
 		minViewMode: 0,
+		maxViewMode: 4,
 		multidate: false,
 		multidateSeparator: ',',
 		orientation: "auto",
@@ -1563,8 +1783,15 @@
 		weekStart: 0,
 		disableTouchKeyboard: false,
 		enableOnReadonly: true,
+		showOnFocus: true,
+		zIndexOffset: 10,
 		container: 'body',
-		immediateUpdates: false
+		immediateUpdates: false,
+		title: '',
+		templates: {
+			leftArrow: '&laquo;',
+			rightArrow: '&raquo;'
+		}
 	};
 	var locale_opts = $.fn.datepicker.locale_opts = [
 		'format',
@@ -1580,7 +1807,8 @@
 			months: ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"],
 			monthsShort: ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"],
 			today: "Today",
-			clear: "Clear"
+			clear: "Clear",
+			titleFormat: "MM yyyy"
 		}
 	};
 
@@ -1600,6 +1828,16 @@
 				clsName: 'years',
 				navFnc: 'FullYear',
 				navStep: 10
+			},
+			{
+				clsName: 'decades',
+				navFnc: 'FullDecade',
+				navStep: 100
+			},
+			{
+				clsName: 'centuries',
+				navFnc: 'FullCentury',
+				navStep: 1000
 		}],
 		isLeapYear: function(year){
 			return (((year % 4 === 0) && (year % 100 !== 0)) || (year % 400 === 0));
@@ -1608,9 +1846,11 @@
 			return [31, (DPGlobal.isLeapYear(year) ? 29 : 28), 31, 30, 31, 30, 31, 31, 30, 31, 30, 31][month];
 		},
 		validParts: /dd?|DD?|mm?|MM?|yy(?:yy)?/g,
-		nonpunctuation: /[^ -\/:-@\[\u3400-\u9fff-`{-~\t\n\r]+/g,
+		nonpunctuation: /[^ -\/:-@\u5e74\u6708\u65e5\[-`{-~\t\n\r]+/g,
 		parseFormat: function(format){
-			// IE treats \0 as a string end in inputs (truncating the value),
+			if (typeof format.toValue === 'function' && typeof format.toDisplay === 'function')
+                return format;
+            // IE treats \0 as a string end in inputs (truncating the value),
 			// so it's a bad format delimiter, anyway
 			var separators = format.replace(this.validParts, '\0').split('\0'),
 				parts = format.match(this.validParts);
@@ -1619,48 +1859,84 @@
 			}
 			return {separators: separators, parts: parts};
 		},
-		parseDate: function(date, format, language){
+		parseDate: function(date, format, language, assumeNearby){
 			if (!date)
 				return undefined;
 			if (date instanceof Date)
 				return date;
 			if (typeof format === 'string')
 				format = DPGlobal.parseFormat(format);
-			var part_re = /([\-+]\d+)([dmwy])/,
+			if (format.toValue)
+                return format.toValue(date, format, language);
+            var part_re = /([\-+]\d+)([dmwy])/,
 				parts = date.match(/([\-+]\d+)([dmwy])/g),
-				part, dir, i;
+				fn_map = {
+					d: 'moveDay',
+					m: 'moveMonth',
+					w: 'moveWeek',
+					y: 'moveYear'
+				},
+				dateAliases = {
+					yesterday: '-1d',
+					today: '+0d',
+					tomorrow: '+1d'
+				},
+				part, dir, i, fn;
 			if (/^[\-+]\d+[dmwy]([\s,]+[\-+]\d+[dmwy])*$/.test(date)){
 				date = new Date();
 				for (i=0; i < parts.length; i++){
 					part = part_re.exec(parts[i]);
 					dir = parseInt(part[1]);
-					switch (part[2]){
-						case 'd':
-							date.setUTCDate(date.getUTCDate() + dir);
-							break;
-						case 'm':
-							date = Datepicker.prototype.moveMonth.call(Datepicker.prototype, date, dir);
-							break;
-						case 'w':
-							date.setUTCDate(date.getUTCDate() + dir * 7);
-							break;
-						case 'y':
-							date = Datepicker.prototype.moveYear.call(Datepicker.prototype, date, dir);
-							break;
-					}
+					fn = fn_map[part[2]];
+					date = Datepicker.prototype[fn](date, dir);
 				}
-				return UTCDate(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate(), 0, 0, 0);
+				return UTCDate(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate());
 			}
+
+			if (typeof dateAliases[date] !== 'undefined') {
+				date = dateAliases[date];
+				parts = date.match(/([\-+]\d+)([dmwy])/g);
+
+				if (/^[\-+]\d+[dmwy]([\s,]+[\-+]\d+[dmwy])*$/.test(date)){
+					date = new Date();
+				  	for (i=0; i < parts.length; i++){
+						part = part_re.exec(parts[i]);
+						dir = parseInt(part[1]);
+						fn = fn_map[part[2]];
+						date = Datepicker.prototype[fn](date, dir);
+				  	}
+
+			  		return UTCDate(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate());
+				}
+			}
+
 			parts = date && date.match(this.nonpunctuation) || [];
 			date = new Date();
+
+			function applyNearbyYear(year, threshold){
+				if (threshold === true)
+					threshold = 10;
+
+				// if year is 2 digits or less, than the user most likely is trying to get a recent century
+				if (year < 100){
+					year += 2000;
+					// if the new year is more than threshold years in advance, use last century
+					if (year > ((new Date()).getFullYear()+threshold)){
+						year -= 100;
+					}
+				}
+
+				return year;
+			}
+
 			var parsed = {},
 				setters_order = ['yyyy', 'yy', 'M', 'MM', 'm', 'mm', 'd', 'dd'],
 				setters_map = {
 					yyyy: function(d,v){
-						return d.setUTCFullYear(v);
+						return d.setUTCFullYear(assumeNearby ? applyNearbyYear(v, assumeNearby) : v);
 					},
 					yy: function(d,v){
-						return d.setUTCFullYear(2000+v);
+						return d.setUTCFullYear(assumeNearby ? applyNearbyYear(v, assumeNearby) : v);
 					},
 					m: function(d,v){
 						if (isNaN(d))
@@ -1680,7 +1956,7 @@
 				val, filtered;
 			setters_map['M'] = setters_map['MM'] = setters_map['mm'] = setters_map['m'];
 			setters_map['dd'] = setters_map['d'];
-			date = UTCDate(date.getFullYear(), date.getMonth(), date.getDate(), 0, 0, 0);
+			date = UTCToday();
 			var fparts = format.parts.slice();
 			// Remove noop parts
 			if (parts.length !== fparts.length){
@@ -1731,7 +2007,9 @@
 				return '';
 			if (typeof format === 'string')
 				format = DPGlobal.parseFormat(format);
-			var val = {
+			if (format.toDisplay)
+                return format.toDisplay(date, format, language);
+            var val = {
 				d: date.getUTCDate(),
 				D: dates[language].daysShort[date.getUTCDay()],
 				DD: dates[language].days[date.getUTCDay()],
@@ -1753,10 +2031,13 @@
 			return date.join('');
 		},
 		headTemplate: '<thead>'+
+			              '<tr>'+
+			                '<th colspan="7" class="datepicker-title"></th>'+
+			              '</tr>'+
 							'<tr>'+
-								'<th class="prev">&#171;</th>'+
+								'<th class="prev">&laquo;</th>'+
 								'<th colspan="5" class="datepicker-switch"></th>'+
-								'<th class="next">&#187;</th>'+
+								'<th class="next">&raquo;</th>'+
 							'</tr>'+
 						'</thead>',
 		contTemplate: '<tbody><tr><td colspan="7"></td></tr></tbody>',
@@ -1791,6 +2072,20 @@
 									DPGlobal.footTemplate+
 								'</table>'+
 							'</div>'+
+							'<div class="datepicker-decades">'+
+								'<table class="table-condensed">'+
+									DPGlobal.headTemplate+
+									DPGlobal.contTemplate+
+									DPGlobal.footTemplate+
+								'</table>'+
+							'</div>'+
+							'<div class="datepicker-centuries">'+
+								'<table class="table-condensed">'+
+									DPGlobal.headTemplate+
+									DPGlobal.contTemplate+
+									DPGlobal.footTemplate+
+								'</table>'+
+							'</div>'+
 						'</div>';
 
 	$.fn.datepicker.DPGlobal = DPGlobal;
@@ -1806,7 +2101,7 @@
 
 	/* DATEPICKER VERSION
 	 * =================== */
-	$.fn.datepicker.version =  "1.4.1-dev";
+	$.fn.datepicker.version = '1.6.0';
 
 	/* DATEPICKER DATA-API
 	* ================== */
@@ -1827,38 +2122,21 @@
 		datepickerPlugin.call($('[data-provide="datepicker-inline"]'));
 	});
 
-}(window.jQuery));
+}));
 
-/**
- * Spanish translation for bootstrap-datepicker
- * Bruno Bonamin <bruno.bonamin@gmail.com>
- */
-;(function($){
-	$.fn.datepicker.dates['es'] = {
-		days: ["Domingo", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"],
-		daysShort: ["Dom", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"],
-		daysMin: ["Do", "Lu", "Ma", "Mi", "Ju", "Vi", "Sa"],
-		months: ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"],
-		monthsShort: ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"],
-		today: "Hoy",
-		clear: "Borrar",
-		weekStart: 1,
-		format: "dd/mm/yyyy"
-	};
-}(jQuery));
-
-/*! DataTables 1.10.5
- * ©2008-2014 SpryMedia Ltd - datatables.net/license
+!function(a){a.fn.datepicker.dates.es={days:["Domingo","Lunes","Martes","Miércoles","Jueves","Viernes","Sábado"],daysShort:["Dom","Lun","Mar","Mié","Jue","Vie","Sáb"],daysMin:["Do","Lu","Ma","Mi","Ju","Vi","Sa"],months:["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"],monthsShort:["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"],today:"Hoy",monthsTitle:"Meses",clear:"Borrar",weekStart:1,format:"dd/mm/yyyy"}}(jQuery);
+/*! DataTables 1.10.12-dev
+ * ©2008-2015 SpryMedia Ltd - datatables.net/license
  */
 
 /**
  * @summary     DataTables
  * @description Paginate, search and order HTML tables
- * @version     1.10.5
+ * @version     1.10.12-dev
  * @file        jquery.dataTables.js
  * @author      SpryMedia Ltd (www.sprymedia.co.uk)
  * @contact     www.sprymedia.co.uk/contact
- * @copyright   Copyright 2008-2014 SpryMedia Ltd.
+ * @copyright   Copyright 2008-2015 SpryMedia Ltd.
  *
  * This source file is free software, available under the following license:
  *   MIT license - http://datatables.net/license
@@ -1871,28 +2149,41 @@
  */
 
 /*jslint evil: true, undef: true, browser: true */
-/*globals $,require,jQuery,define,_selector_run,_selector_opts,_selector_first,_selector_row_indexes,_ext,_Api,_api_register,_api_registerPlural,_re_new_lines,_re_html,_re_formatted_numeric,_re_escape_regex,_empty,_intVal,_numToDecimal,_isNumber,_isHtml,_htmlNumeric,_pluck,_pluck_order,_range,_stripHtml,_unique,_fnBuildAjax,_fnAjaxUpdate,_fnAjaxParameters,_fnAjaxUpdateDraw,_fnAjaxDataSrc,_fnAddColumn,_fnColumnOptions,_fnAdjustColumnSizing,_fnVisibleToColumnIndex,_fnColumnIndexToVisible,_fnVisbleColumns,_fnGetColumns,_fnColumnTypes,_fnApplyColumnDefs,_fnHungarianMap,_fnCamelToHungarian,_fnLanguageCompat,_fnBrowserDetect,_fnAddData,_fnAddTr,_fnNodeToDataIndex,_fnNodeToColumnIndex,_fnGetCellData,_fnSetCellData,_fnSplitObjNotation,_fnGetObjectDataFn,_fnSetObjectDataFn,_fnGetDataMaster,_fnClearTable,_fnDeleteIndex,_fnInvalidate,_fnGetRowElements,_fnCreateTr,_fnBuildHead,_fnDrawHead,_fnDraw,_fnReDraw,_fnAddOptionsHtml,_fnDetectHeader,_fnGetUniqueThs,_fnFeatureHtmlFilter,_fnFilterComplete,_fnFilterCustom,_fnFilterColumn,_fnFilter,_fnFilterCreateSearch,_fnEscapeRegex,_fnFilterData,_fnFeatureHtmlInfo,_fnUpdateInfo,_fnInfoMacros,_fnInitialise,_fnInitComplete,_fnLengthChange,_fnFeatureHtmlLength,_fnFeatureHtmlPaginate,_fnPageChange,_fnFeatureHtmlProcessing,_fnProcessingDisplay,_fnFeatureHtmlTable,_fnScrollDraw,_fnApplyToChildren,_fnCalculateColumnWidths,_fnThrottle,_fnConvertToWidth,_fnScrollingWidthAdjust,_fnGetWidestNode,_fnGetMaxLenString,_fnStringToCss,_fnScrollBarWidth,_fnSortFlatten,_fnSort,_fnSortAria,_fnSortListener,_fnSortAttachListener,_fnSortingClasses,_fnSortData,_fnSaveState,_fnLoadState,_fnSettingsFromNode,_fnLog,_fnMap,_fnBindAction,_fnCallbackReg,_fnCallbackFire,_fnLengthOverflow,_fnRenderer,_fnDataSource,_fnRowAttributes*/
-
-(/** @lends <global> */function( window, document, undefined ) {
+/*globals $,require,jQuery,define,_selector_run,_selector_opts,_selector_first,_selector_row_indexes,_ext,_Api,_api_register,_api_registerPlural,_re_new_lines,_re_html,_re_formatted_numeric,_re_escape_regex,_empty,_intVal,_numToDecimal,_isNumber,_isHtml,_htmlNumeric,_pluck,_pluck_order,_range,_stripHtml,_unique,_fnBuildAjax,_fnAjaxUpdate,_fnAjaxParameters,_fnAjaxUpdateDraw,_fnAjaxDataSrc,_fnAddColumn,_fnColumnOptions,_fnAdjustColumnSizing,_fnVisibleToColumnIndex,_fnColumnIndexToVisible,_fnVisbleColumns,_fnGetColumns,_fnColumnTypes,_fnApplyColumnDefs,_fnHungarianMap,_fnCamelToHungarian,_fnLanguageCompat,_fnBrowserDetect,_fnAddData,_fnAddTr,_fnNodeToDataIndex,_fnNodeToColumnIndex,_fnGetCellData,_fnSetCellData,_fnSplitObjNotation,_fnGetObjectDataFn,_fnSetObjectDataFn,_fnGetDataMaster,_fnClearTable,_fnDeleteIndex,_fnInvalidate,_fnGetRowElements,_fnCreateTr,_fnBuildHead,_fnDrawHead,_fnDraw,_fnReDraw,_fnAddOptionsHtml,_fnDetectHeader,_fnGetUniqueThs,_fnFeatureHtmlFilter,_fnFilterComplete,_fnFilterCustom,_fnFilterColumn,_fnFilter,_fnFilterCreateSearch,_fnEscapeRegex,_fnFilterData,_fnFeatureHtmlInfo,_fnUpdateInfo,_fnInfoMacros,_fnInitialise,_fnInitComplete,_fnLengthChange,_fnFeatureHtmlLength,_fnFeatureHtmlPaginate,_fnPageChange,_fnFeatureHtmlProcessing,_fnProcessingDisplay,_fnFeatureHtmlTable,_fnScrollDraw,_fnApplyToChildren,_fnCalculateColumnWidths,_fnThrottle,_fnConvertToWidth,_fnGetWidestNode,_fnGetMaxLenString,_fnStringToCss,_fnSortFlatten,_fnSort,_fnSortAria,_fnSortListener,_fnSortAttachListener,_fnSortingClasses,_fnSortData,_fnSaveState,_fnLoadState,_fnSettingsFromNode,_fnLog,_fnMap,_fnBindAction,_fnCallbackReg,_fnCallbackFire,_fnLengthOverflow,_fnRenderer,_fnDataSource,_fnRowAttributes*/
 
 (function( factory ) {
 	"use strict";
 
 	if ( typeof define === 'function' && define.amd ) {
-		// Define as an AMD module if possible
-		define( 'datatables', ['jquery'], factory );
+		// AMD
+		define( ['jquery'], function ( $ ) {
+			return factory( $, window, document );
+		} );
 	}
-    else if ( typeof exports === 'object' ) {
-        // Node/CommonJS
-        module.exports = factory( require( 'jquery' ) );
-    }
-	else if ( jQuery && !jQuery.fn.dataTable ) {
-		// Define using browser globals otherwise
-		// Prevent multiple instantiations if the script is loaded twice
-		factory( jQuery );
+	else if ( typeof exports === 'object' ) {
+		// CommonJS
+		module.exports = function (root, $) {
+			if ( ! root ) {
+				// CommonJS environments without a window global must pass a
+				// root. This will give an error otherwise
+				root = window;
+			}
+
+			if ( ! $ ) {
+				$ = typeof window !== 'undefined' ? // jQuery's factory checks for a global window
+					require('jquery') :
+					require('jquery')( root );
+			}
+
+			return factory( $, root, root.document );
+		};
+	}
+	else {
+		// Browser
+		factory( jQuery, window, document );
 	}
 }
-(/** @lends <global> */function( $ ) {
+(function( $, window, document, undefined ) {
 	"use strict";
 
 	/**
@@ -1960,9 +2251,17 @@
 	// Escape regular expression special characters
 	var _re_escape_regex = new RegExp( '(\\' + [ '/', '.', '*', '+', '?', '|', '(', ')', '[', ']', '{', '}', '\\', '$', '^', '-' ].join('|\\') + ')', 'g' );
 	
-	// U+2009 is thin space and U+202F is narrow no-break space, both used in many
-	// standards as thousands separators
-	var _re_formatted_numeric = /[',$£€¥%\u2009\u202F]/g;
+	// http://en.wikipedia.org/wiki/Foreign_exchange_market
+	// - \u20BD - Russian ruble.
+	// - \u20a9 - South Korean Won
+	// - \u20BA - Turkish Lira
+	// - \u20B9 - Indian Rupee
+	// - R - Brazil (R$) and South Africa
+	// - fr - Swiss Franc
+	// - kr - Swedish krona, Norwegian krone and Danish krone
+	// - \u2009 is thin space and \u202F is narrow no-break space, both used in many
+	//   standards as thousands separators.
+	var _re_formatted_numeric = /[',$£€¥%\u2009\u202F\u20BD\u20a9\u20BArfk]/gi;
 	
 	
 	var _empty = function ( d ) {
@@ -1991,6 +2290,13 @@
 	var _isNumber = function ( d, decimalPoint, formatted ) {
 		var strType = typeof d === 'string';
 	
+		// If empty return immediately so there must be a number if it is a
+		// formatted string (this stops the string "k", or "kr", etc being detected
+		// as a formatted number for currency
+		if ( _empty( d ) ) {
+			return true;
+		}
+	
 		if ( decimalPoint && strType ) {
 			d = _numToDecimal( d, decimalPoint );
 		}
@@ -1999,7 +2305,7 @@
 			d = d.replace( _re_formatted_numeric, '' );
 		}
 	
-		return _empty( d ) || (!isNaN( parseFloat(d) ) && isFinite( d ));
+		return !isNaN( parseFloat(d) ) && isFinite( d );
 	};
 	
 	
@@ -2301,6 +2607,14 @@
 		_fnCompatMap( init, 'pageLength',    'iDisplayLength' );
 		_fnCompatMap( init, 'searching',     'bFilter' );
 	
+		// Boolean initialisation of x-scrolling
+		if ( typeof init.sScrollX === 'boolean' ) {
+			init.sScrollX = init.sScrollX ? '100%' : '';
+		}
+		if ( typeof init.scrollX === 'boolean' ) {
+			init.scrollX = init.scrollX ? '100%' : '';
+		}
+	
 		// Column search objects are in an array, so it needs to be converted
 		// element by element
 		var searchCols = init.aoSearchCols;
@@ -2327,6 +2641,12 @@
 		_fnCompatMap( init, 'orderData',     'aDataSort' );
 		_fnCompatMap( init, 'orderSequence', 'asSorting' );
 		_fnCompatMap( init, 'orderDataType', 'sortDataType' );
+	
+		// orderData can be given as an integer
+		var dataSort = init.aDataSort;
+		if ( dataSort && ! $.isArray( dataSort ) ) {
+			init.aDataSort = [ dataSort ];
+		}
 	}
 	
 	
@@ -2337,49 +2657,75 @@
 	 */
 	function _fnBrowserDetect( settings )
 	{
-		var browser = settings.oBrowser;
+		// We don't need to do this every time DataTables is constructed, the values
+		// calculated are specific to the browser and OS configuration which we
+		// don't expect to change between initialisations
+		if ( ! DataTable.__browser ) {
+			var browser = {};
+			DataTable.__browser = browser;
 	
-		// Scrolling feature / quirks detection
-		var n = $('<div/>')
-			.css( {
-				position: 'absolute',
-				top: 0,
-				left: 0,
-				height: 1,
-				width: 1,
-				overflow: 'hidden'
-			} )
-			.append(
-				$('<div/>')
-					.css( {
-						position: 'absolute',
-						top: 1,
-						left: 1,
-						width: 100,
-						overflow: 'scroll'
-					} )
-					.append(
-						$('<div class="test"/>')
-							.css( {
-								width: '100%',
-								height: 10
-							} )
-					)
-			)
-			.appendTo( 'body' );
+			// Scrolling feature / quirks detection
+			var n = $('<div/>')
+				.css( {
+					position: 'fixed',
+					top: 0,
+					left: 0,
+					height: 1,
+					width: 1,
+					overflow: 'hidden'
+				} )
+				.append(
+					$('<div/>')
+						.css( {
+							position: 'absolute',
+							top: 1,
+							left: 1,
+							width: 100,
+							overflow: 'scroll'
+						} )
+						.append(
+							$('<div/>')
+								.css( {
+									width: '100%',
+									height: 10
+								} )
+						)
+				)
+				.appendTo( 'body' );
 	
-		var test = n.find('.test');
+			var outer = n.children();
+			var inner = outer.children();
 	
-		// IE6/7 will oversize a width 100% element inside a scrolling element, to
-		// include the width of the scrollbar, while other browsers ensure the inner
-		// element is contained without forcing scrolling
-		browser.bScrollOversize = test[0].offsetWidth === 100;
+			// Numbers below, in order, are:
+			// inner.offsetWidth, inner.clientWidth, outer.offsetWidth, outer.clientWidth
+			//
+			// IE6 XP:                           100 100 100  83
+			// IE7 Vista:                        100 100 100  83
+			// IE 8+ Windows:                     83  83 100  83
+			// Evergreen Windows:                 83  83 100  83
+			// Evergreen Mac with scrollbars:     85  85 100  85
+			// Evergreen Mac without scrollbars: 100 100 100 100
 	
-		// In rtl text layout, some browsers (most, but not all) will place the
-		// scrollbar on the left, rather than the right.
-		browser.bScrollbarLeft = test.offset().left !== 1;
+			// Get scrollbar width
+			browser.barWidth = outer[0].offsetWidth - outer[0].clientWidth;
 	
-		n.remove();
+			// IE6/7 will oversize a width 100% element inside a scrolling element, to
+			// include the width of the scrollbar, while other browsers ensure the inner
+			// element is contained without forcing scrolling
+			browser.bScrollOversize = inner[0].offsetWidth === 100 && outer[0].clientWidth !== 100;
+	
+			// In rtl text layout, some browsers (most, but not all) will place the
+			// scrollbar on the left, rather than the right.
+			browser.bScrollbarLeft = Math.round( inner.offset().left ) !== 1;
+	
+			// IE8- don't provide height and width for getBoundingClientRect
+			browser.bBounding = n[0].getBoundingClientRect().width ? true : false;
+	
+			n.remove();
+		}
+	
+		$.extend( settings.oBrowser, DataTable.__browser );
+		settings.oScroll.iBarWidth = DataTable.__browser.barWidth;
 	}
 	
 	
@@ -2507,7 +2853,7 @@
 			/* iDataSort to be applied (backwards compatibility), but aDataSort will take
 			 * priority if defined
 			 */
-			if ( typeof oOptions.iDataSort === 'number' )
+			if ( oOptions.iDataSort !== undefined )
 			{
 				oCol.aDataSort = [ oOptions.iDataSort ];
 			}
@@ -2525,6 +2871,7 @@
 		oCol._bAttrSrc = $.isPlainObject( mDataSrc ) && (
 			attrTest(mDataSrc.sort) || attrTest(mDataSrc.type) || attrTest(mDataSrc.filter)
 		);
+		oCol._setter = null;
 	
 		oCol.fnGetData = function (rowData, type, meta) {
 			var innerData = mData( rowData, type, undefined, meta );
@@ -2649,7 +2996,16 @@
 	 */
 	function _fnVisbleColumns( oSettings )
 	{
-		return _fnGetColumns( oSettings, 'bVisible' ).length;
+		var vis = 0;
+	
+		// No reduce in IE8, use a loop for now
+		$.each( oSettings.aoColumns, function ( i, col ) {
+			if ( col.bVisible && $(col.nTh).css('display') !== 'none' ) {
+				vis++;
+			}
+		} );
+	
+		return vis;
 	}
 	
 	
@@ -2836,7 +3192,8 @@
 		/* Create the object for storing information about this new row */
 		var iRow = oSettings.aoData.length;
 		var oData = $.extend( true, {}, DataTable.models.oRow, {
-			src: nTr ? 'dom' : 'data'
+			src: nTr ? 'dom' : 'data',
+			idx: iRow
 		} );
 	
 		oData._aData = aDataIn;
@@ -2845,19 +3202,20 @@
 		/* Create the cells */
 		var nTd, sThisType;
 		var columns = oSettings.aoColumns;
+	
+		// Invalidate the column types as the new data needs to be revalidated
 		for ( var i=0, iLen=columns.length ; i<iLen ; i++ )
 		{
-			// When working with a row, the data source object must be populated. In
-			// all other cases, the data source object is already populated, so we
-			// don't overwrite it, which might break bindings etc
-			if ( nTr ) {
-				_fnSetCellData( oSettings, iRow, i, _fnGetCellData( oSettings, iRow, i ) );
-			}
 			columns[i].sType = null;
 		}
 	
 		/* Add to the display array */
 		oSettings.aiDisplayMaster.push( iRow );
+	
+		var id = oSettings.rowIdFn( aDataIn );
+		if ( id !== undefined ) {
+			oSettings.aIds[ id ] = oData;
+		}
 	
 		/* Create the DOM information, or register it if already present */
 		if ( nTr || ! oSettings.oFeatures.bDeferRender )
@@ -2947,14 +3305,15 @@
 			if ( settings.iDrawError != draw && defaultContent === null ) {
 				_fnLog( settings, 0, "Requested unknown parameter "+
 					(typeof col.mData=='function' ? '{function}' : "'"+col.mData+"'")+
-					" for row "+rowIdx, 4 );
+					" for row "+rowIdx+", column "+colIdx, 4 );
 				settings.iDrawError = draw;
 			}
 			return defaultContent;
 		}
 	
-		/* When the data source is null, we can use default column data */
-		if ( (cellData === rowData || cellData === null) && defaultContent !== null ) {
+		// When the data source is null and a specific data type is requested (i.e.
+		// not the original data), we can use default column data
+		if ( (cellData === rowData || cellData === null) && defaultContent !== null && type !== undefined ) {
 			cellData = defaultContent;
 		}
 		else if ( typeof cellData === 'function' ) {
@@ -3002,7 +3361,7 @@
 	 */
 	function _fnSplitObjNotation( str )
 	{
-		return $.map( str.match(/(\\.|[^\.])+/g), function ( s ) {
+		return $.map( str.match(/(\\.|[^\.])+/g) || [''], function ( s ) {
 			return s.replace(/\\./g, '.');
 		} );
 	}
@@ -3085,8 +3444,10 @@
 							innerSrc = a.join('.');
 	
 							// Traverse each entry in the array getting the properties requested
-							for ( var j=0, jLen=data.length ; j<jLen ; j++ ) {
-								out.push( fetchData( data[j], type, innerSrc ) );
+							if ( $.isArray( data ) ) {
+								for ( var j=0, jLen=data.length ; j<jLen ; j++ ) {
+									out.push( fetchData( data[j], type, innerSrc ) );
+								}
 							}
 	
 							// If a string is given in between the array notation indicators, that
@@ -3186,11 +3547,21 @@
 						innerSrc = b.join('.');
 	
 						// Traverse each entry in the array setting the properties requested
-						for ( var j=0, jLen=val.length ; j<jLen ; j++ )
+						if ( $.isArray( val ) )
 						{
-							o = {};
-							setData( o, val[j], innerSrc );
-							data[ a[i] ].push( o );
+							for ( var j=0, jLen=val.length ; j<jLen ; j++ )
+							{
+								o = {};
+								setData( o, val[j], innerSrc );
+								data[ a[i] ].push( o );
+							}
+						}
+						else
+						{
+							// We've been asked to save data to an array, but it
+							// isn't array data to be saved. Best that can be done
+							// is to just save the value.
+							data[ a[i] ] = val;
 						}
 	
 						// The inner call to setData has already traversed through the remainder
@@ -3263,6 +3634,7 @@
 		settings.aoData.length = 0;
 		settings.aiDisplayMaster.length = 0;
 		settings.aiDisplay.length = 0;
+		settings.aIds = {};
 	}
 	
 	
@@ -3368,7 +3740,7 @@
 			}
 	
 			// Update DataTables special `DT_*` attributes for the row
-			_fnRowAttributes( row );
+			_fnRowAttributes( settings, row );
 		}
 	}
 	
@@ -3400,7 +3772,11 @@
 			objectRead = settings._rowReadObject;
 	
 		// Allow the data object to be passed in, or construct
-		d = d || objectRead ? {} : [];
+		d = d !== undefined ?
+			d :
+			objectRead ?
+				{} :
+				[];
 	
 		var attr = function ( str, td  ) {
 			if ( typeof str === 'string' ) {
@@ -3463,9 +3839,20 @@
 		else {
 			// Existing row object passed in
 			tds = row.anCells;
-			
+	
 			for ( var j=0, jen=tds.length ; j<jen ; j++ ) {
 				cellProcess( tds[j] );
+			}
+		}
+	
+		// Read the ID from the DOM if present
+		var rowNode = row.firstChild ? row : row.nTr;
+	
+		if ( rowNode ) {
+			var id = rowNode.getAttribute( 'id' );
+	
+			if ( id ) {
+				_fnSetObjectDataFn( settings.rowId )( d, id );
 			}
 		}
 	
@@ -3506,7 +3893,7 @@
 			nTr._DT_RowIndex = iRow;
 	
 			/* Special parameters can be given by the data source to be used on the row */
-			_fnRowAttributes( row );
+			_fnRowAttributes( oSettings, row );
 	
 			/* Process each column */
 			for ( i=0, iLen=oSettings.aoColumns.length ; i<iLen ; i++ )
@@ -3514,11 +3901,17 @@
 				oCol = oSettings.aoColumns[i];
 	
 				nTd = nTrIn ? anTds[i] : document.createElement( oCol.sCellType );
+				nTd._DT_CellIndex = {
+					row: iRow,
+					column: i
+				};
+				
 				cells.push( nTd );
 	
 				// Need to create the HTML if new, or if a rendering function is defined
-				if ( !nTrIn || oCol.mRender || oCol.mData !== i )
-				{
+				if ( (!nTrIn || oCol.mRender || oCol.mData !== i) &&
+					 (!$.isPlainObject(oCol.mData) || oCol.mData._ !== i+'.display')
+				) {
 					nTd.innerHTML = _fnGetCellData( oSettings, iRow, i, 'display' );
 				}
 	
@@ -3558,17 +3951,20 @@
 	/**
 	 * Add attributes to a row based on the special `DT_*` parameters in a data
 	 * source object.
+	 *  @param {object} settings DataTables settings object
 	 *  @param {object} DataTables row object for the row to be modified
 	 *  @memberof DataTable#oApi
 	 */
-	function _fnRowAttributes( row )
+	function _fnRowAttributes( settings, row )
 	{
 		var tr = row.nTr;
 		var data = row._aData;
 	
 		if ( tr ) {
-			if ( data.DT_RowId ) {
-				tr.id = data.DT_RowId;
+			var id = settings.rowIdFn( data );
+	
+			if ( id ) {
+				tr.id = id;
 			}
 	
 			if ( data.DT_RowClass ) {
@@ -3633,7 +4029,7 @@
 				}
 			}
 	
-			if ( column.sTitle != cell.html() ) {
+			if ( column.sTitle != cell[0].innerHTML ) {
 				cell.html( column.sTitle );
 			}
 	
@@ -4105,6 +4501,7 @@
 	
 		/* Built our DOM structure - replace the holding div with what we want */
 		holding.replaceWith( insert );
+		oSettings.nHolding = null;
 	}
 	
 	
@@ -4220,8 +4617,6 @@
 		return aReturn;
 	}
 	
-	
-	
 	/**
 	 * Create an Ajax call based on the table's settings, taking into account that
 	 * parameters can have multiple forms, and backwards compatibility.
@@ -4264,14 +4659,18 @@
 		var ajaxData;
 		var ajax = oSettings.ajax;
 		var instance = oSettings.oInstance;
+		var callback = function ( json ) {
+			_fnCallbackFire( oSettings, null, 'xhr', [oSettings, json, oSettings.jqXHR] );
+			fn( json );
+		};
 	
 		if ( $.isPlainObject( ajax ) && ajax.data )
 		{
 			ajaxData = ajax.data;
 	
 			var newData = $.isFunction( ajaxData ) ?
-				ajaxData( data ) :  // fn can manipulate data or return an object
-				ajaxData;           // object or array to merge
+				ajaxData( data, oSettings ) :  // fn can manipulate data or return
+				ajaxData;                      // an object object or array to merge
 	
 			// If the function returned something, use that alone
 			data = $.isFunction( ajaxData ) && newData ?
@@ -4288,24 +4687,25 @@
 			"success": function (json) {
 				var error = json.error || json.sError;
 				if ( error ) {
-					oSettings.oApi._fnLog( oSettings, 0, error );
+					_fnLog( oSettings, 0, error );
 				}
 	
 				oSettings.json = json;
-				_fnCallbackFire( oSettings, null, 'xhr', [oSettings, json] );
-				fn( json );
+				callback( json );
 			},
 			"dataType": "json",
 			"cache": false,
 			"type": oSettings.sServerMethod,
 			"error": function (xhr, error, thrown) {
-				var log = oSettings.oApi._fnLog;
+				var ret = _fnCallbackFire( oSettings, null, 'xhr', [oSettings, null, oSettings.jqXHR] );
 	
-				if ( error == "parsererror" ) {
-					log( oSettings, 0, 'Invalid JSON response', 1 );
-				}
-				else if ( xhr.readyState === 4 ) {
-					log( oSettings, 0, 'Ajax error', 7 );
+				if ( $.inArray( true, ret ) === -1 ) {
+					if ( error == "parsererror" ) {
+						_fnLog( oSettings, 0, 'Invalid JSON response', 1 );
+					}
+					else if ( xhr.readyState === 4 ) {
+						_fnLog( oSettings, 0, 'Ajax error', 7 );
+					}
 				}
 	
 				_fnProcessingDisplay( oSettings, false );
@@ -4326,7 +4726,7 @@
 				$.map( data, function (val, key) { // Need to convert back to 1.9 trad format
 					return { name: key, value: val };
 				} ),
-				fn,
+				callback,
 				oSettings
 			);
 		}
@@ -4340,7 +4740,7 @@
 		else if ( $.isFunction( ajax ) )
 		{
 			// Is a function - let the caller define what needs to be done
-			oSettings.jqXHR = ajax.call( instance, data, fn, oSettings );
+			oSettings.jqXHR = ajax.call( instance, data, callback, oSettings );
 		}
 		else
 		{
@@ -4506,6 +4906,7 @@
 			return json[old] !== undefined ? json[old] : json[modern];
 		};
 	
+		var data = _fnAjaxDataSrc( settings, json );
 		var draw            = compat( 'sEcho',                'draw' );
 		var recordsTotal    = compat( 'iTotalRecords',        'recordsTotal' );
 		var recordsFiltered = compat( 'iTotalDisplayRecords', 'recordsFiltered' );
@@ -4522,7 +4923,6 @@
 		settings._iRecordsTotal   = parseInt(recordsTotal, 10);
 		settings._iRecordsDisplay = parseInt(recordsFiltered, 10);
 	
-		var data = _fnAjaxDataSrc( settings, json );
 		for ( var i=0, ien=data.length ; i<ien ; i++ ) {
 			_fnAddData( settings, data[i] );
 		}
@@ -4564,7 +4964,6 @@
 			_fnGetObjectDataFn( dataSrc )( json ) :
 			json;
 	}
-	
 	
 	/**
 	 * Generate the node required for filtering text
@@ -4735,7 +5134,7 @@
 			// So the array reference doesn't break set the results into the
 			// existing array
 			displayRows.length = 0;
-			displayRows.push.apply( displayRows, rows );
+			$.merge( displayRows, rows );
 		}
 	}
 	
@@ -4846,7 +5245,7 @@
 			 * 
 			 * ^(?=.*?\bone\b)(?=.*?\btwo three\b)(?=.*?\bfour\b).*$
 			 */
-			var a = $.map( search.match( /"[^"]+"|[^ ]+/g ) || '', function ( word ) {
+			var a = $.map( search.match( /"[^"]+"|[^ ]+/g ) || [''], function ( word ) {
 				if ( word.charAt(0) === '"' ) {
 					var m = word.match( /^"(.*)"$/ );
 					word = m ? m[1] : word;
@@ -5091,6 +5490,7 @@
 		var i, iLen, iAjaxStart=settings.iInitDisplayStart;
 		var columns = settings.aoColumns, column;
 		var features = settings.oFeatures;
+		var deferLoading = settings.bDeferLoading; // value modified by the draw
 	
 		/* Ensure that the table data is fully initialised */
 		if ( ! settings.bInitialised ) {
@@ -5122,6 +5522,8 @@
 			}
 		}
 	
+		_fnCallbackFire( settings, null, 'preInit', [settings] );
+	
 		// If there is default sorting required - let's do it. The sort function
 		// will do the drawing for us. Otherwise we draw the table regardless of the
 		// Ajax source - this allows the table to look initialised for Ajax sourcing
@@ -5130,7 +5532,7 @@
 	
 		// Server-side processing init complete is done by _fnAjaxUpdateDraw
 		var dataSrc = _fnDataSource( settings );
-		if ( dataSrc != 'ssp' ) {
+		if ( dataSrc != 'ssp' || deferLoading ) {
 			// if there is an ajax source load the data
 			if ( dataSrc == 'ajax' ) {
 				_fnBuildAjax( settings, [], function(json) {
@@ -5171,12 +5573,13 @@
 	{
 		settings._bInitComplete = true;
 	
-		// On an Ajax load we now have data and therefore want to apply the column
-		// sizing
-		if ( json ) {
+		// When data was added after the initialisation (data or Ajax) we need to
+		// calculate the column sizing
+		if ( json || settings.oInit.aaData ) {
 			_fnAdjustColumnSizing( settings );
 		}
 	
+		_fnCallbackFire( settings, null, 'plugin-init', [settings, json] );
 		_fnCallbackFire( settings, 'aoInitComplete', 'init', [settings, json] );
 	}
 	
@@ -5453,17 +5856,6 @@
 			return !s ? null : _fnStringToCss( s );
 		};
 	
-		// This is fairly messy, but with x scrolling enabled, if the table has a
-		// width attribute, regardless of any width applied using the column width
-		// options, the browser will shrink or grow the table as needed to fit into
-		// that 100%. That would make the width options useless. So we remove it.
-		// This is okay, under the assumption that width:100% is applied to the
-		// table in CSS (it is in the default stylesheet) which will set the table
-		// width as appropriate (the attribute and css behave differently...)
-		if ( scroll.sX && table.attr('width') === '100%' ) {
-			table.removeAttr('width');
-		}
-	
 		if ( ! footer.length ) {
 			footer = null;
 		}
@@ -5513,8 +5905,8 @@
 			.append(
 				$(_div, { 'class': classes.sScrollBody } )
 					.css( {
+						position: 'relative',
 						overflow: 'auto',
-						height: size( scrollY ),
 						width: size( scrollX )
 					} )
 					.append( table )
@@ -5560,6 +5952,11 @@
 				}
 			} );
 		}
+	
+		$(scrollBody).css(
+			scrollY && scroll.bCollapse ? 'max-height' : 'height', 
+			scrollY
+		);
 	
 		settings.nScrollHead = scrollHead;
 		settings.nScrollBody = scrollBody;
@@ -5618,11 +6015,12 @@
 			footer         = settings.nTFoot ? $(settings.nTFoot) : null,
 			browser        = settings.oBrowser,
 			ie67           = browser.bScrollOversize,
+			dtHeaderCells  = _pluck( settings.aoColumns, 'nTh' ),
 			headerTrgEls, footerTrgEls,
 			headerSrcEls, footerSrcEls,
 			headerCopy, footerCopy,
 			headerWidths=[], footerWidths=[],
-			headerContent=[],
+			headerContent=[], footerContent=[],
 			idx, correction, sanityWidth,
 			zeroOut = function(nSizer) {
 				var style = nSizer.style;
@@ -5633,6 +6031,20 @@
 				style.height = 0;
 			};
 	
+		// If the scrollbar visibility has changed from the last draw, we need to
+		// adjust the column sizes as the table width will have changed to account
+		// for the scrollbar
+		var scrollBarVis = divBodyEl.scrollHeight > divBodyEl.clientHeight;
+		
+		if ( settings.scrollBarVis !== scrollBarVis && settings.scrollBarVis !== undefined ) {
+			settings.scrollBarVis = scrollBarVis;
+			_fnAdjustColumnSizing( settings );
+			return; // adjust column sizing will call this function again
+		}
+		else {
+			settings.scrollBarVis = scrollBarVis;
+		}
+	
 		/*
 		 * 1. Re-create the table inside the scrolling div
 		 */
@@ -5640,17 +6052,17 @@
 		// Remove the old minimised thead and tfoot elements in the inner table
 		table.children('thead, tfoot').remove();
 	
-		// Clone the current header and footer elements and then place it into the inner table
-		headerCopy = header.clone().prependTo( table );
-		headerTrgEls = header.find('tr'); // original header is in its own table
-		headerSrcEls = headerCopy.find('tr');
-		headerCopy.find('th, td').removeAttr('tabindex');
-	
 		if ( footer ) {
 			footerCopy = footer.clone().prependTo( table );
 			footerTrgEls = footer.find('tr'); // the original tfoot is in its own table and must be sized
 			footerSrcEls = footerCopy.find('tr');
 		}
+	
+		// Clone the current header and footer elements and then place it into the inner table
+		headerCopy = header.clone().prependTo( table );
+		headerTrgEls = header.find('tr'); // original header is in its own table
+		headerSrcEls = headerCopy.find('tr');
+		headerCopy.find('th, td').removeAttr('tabindex');
 	
 	
 		/*
@@ -5677,13 +6089,6 @@
 			}, footerSrcEls );
 		}
 	
-		// If scroll collapse is enabled, when we put the headers back into the body for sizing, we
-		// will end up forcing the scrollbar to appear, making our measurements wrong for when we
-		// then hide it (end of this function), so add the header height to the body scroller.
-		if ( scroll.bCollapse && scrollY !== "" ) {
-			divBodyStyle.height = (divBody[0].offsetHeight + header[0].offsetHeight)+"px";
-		}
-	
 		// Size the table as a whole
 		sanityWidth = table.outerWidth();
 		if ( scrollX === "" ) {
@@ -5698,32 +6103,17 @@
 			) {
 				tableStyle.width = _fnStringToCss( table.outerWidth() - barWidth);
 			}
-		}
-		else
-		{
-			// x scrolling
-			if ( scrollXInner !== "" ) {
-				// x scroll inner has been given - use it
-				tableStyle.width = _fnStringToCss(scrollXInner);
-			}
-			else if ( sanityWidth == divBody.width() && divBody.height() < table.height() ) {
-				// There is y-scrolling - try to take account of the y scroll bar
-				tableStyle.width = _fnStringToCss( sanityWidth-barWidth );
-				if ( table.outerWidth() > sanityWidth-barWidth ) {
-					// Not possible to take account of it
-					tableStyle.width = _fnStringToCss( sanityWidth );
-				}
-			}
-			else {
-				// When all else fails
-				tableStyle.width = _fnStringToCss( sanityWidth );
-			}
-		}
 	
-		// Recalculate the sanity width - now that we've applied the required width,
-		// before it was a temporary variable. This is required because the column
-		// width calculation is done before this table DOM is created.
-		sanityWidth = table.outerWidth();
+			// Recalculate the sanity width
+			sanityWidth = table.outerWidth();
+		}
+		else if ( scrollXInner !== "" ) {
+			// legacy x scroll inner has been given - use it
+			tableStyle.width = _fnStringToCss(scrollXInner);
+	
+			// Recalculate the sanity width
+			sanityWidth = table.outerWidth();
+		}
 	
 		// Hidden header should have zero height, so remove padding and borders. Then
 		// set the width based on the real headers
@@ -5739,7 +6129,11 @@
 	
 		// Apply all widths in final pass
 		_fnApplyToChildren( function(nToSize, i) {
-			nToSize.style.width = headerWidths[i];
+			// Only apply widths to the DataTables detected header cells - this
+			// prevents complex headers from having contradictory sizes applied
+			if ( $.inArray( nToSize, dtHeaderCells ) !== -1 ) {
+				nToSize.style.width = headerWidths[i];
+			}
 		}, headerTrgEls );
 	
 		$(headerSrcEls).height(0);
@@ -5750,6 +6144,7 @@
 			_fnApplyToChildren( zeroOut, footerSrcEls );
 	
 			_fnApplyToChildren( function(nSizer) {
+				footerContent.push( nSizer.innerHTML );
 				footerWidths.push( _fnStringToCss( $(nSizer).css('width') ) );
 			}, footerSrcEls );
 	
@@ -5777,7 +6172,7 @@
 		if ( footer )
 		{
 			_fnApplyToChildren( function(nSizer, i) {
-				nSizer.innerHTML = "";
+				nSizer.innerHTML = '<div class="dataTables_sizing" style="height:0;overflow:hidden;">'+footerContent[i]+'</div>';
 				nSizer.style.width = footerWidths[i];
 			}, footerSrcEls );
 		}
@@ -5831,18 +6226,6 @@
 			}
 		}
 	
-		if ( scrollY && scroll.bCollapse ) {
-			divBodyStyle.height = _fnStringToCss( scrollY );
-	
-			var iExtra = (scrollX && tableEl.offsetWidth > divBodyEl.offsetWidth) ?
-				barWidth :
-				0;
-	
-			if ( tableEl.offsetHeight < divBodyEl.offsetHeight ) {
-				divBodyStyle.height = _fnStringToCss( tableEl.offsetHeight+iExtra );
-			}
-		}
-	
 		/* Finally set the width's of the header and footer tables */
 		var iOuterWidth = table.outerWidth();
 		divHeaderTable[0].style.width = _fnStringToCss( iOuterWidth );
@@ -5859,6 +6242,9 @@
 			divFooterInner[0].style.width = _fnStringToCss( iOuterWidth );
 			divFooterInner[0].style[padding] = bScrolling ? barWidth+"px" : "0px";
 		}
+	
+		// Correct DOM ordering for colgroup - comes before the thead
+		table.children('colgroup').insertBefore( table.children('thead') );
 	
 		/* Adjust the position of the header in case we loose the y-scrollbar */
 		divBody.scroll();
@@ -5931,10 +6317,17 @@
 			columnCount = columns.length,
 			visibleColumns = _fnGetColumns( oSettings, 'bVisible' ),
 			headerCells = $('th', oSettings.nTHead),
-			tableWidthAttr = table.style.width || table.getAttribute('width'), // from DOM element
+			tableWidthAttr = table.getAttribute('width'), // from DOM element
 			tableContainer = table.parentNode,
 			userInputs = false,
-			i, column, columnIdx, width, outerWidth;
+			i, column, columnIdx, width, outerWidth,
+			browser = oSettings.oBrowser,
+			ie67 = browser.bScrollOversize;
+	
+		var styleWidth = table.style.width;
+		if ( styleWidth && styleWidth.indexOf('%') !== -1 ) {
+			tableWidthAttr = styleWidth;
+		}
 	
 		/* Convert any user input sizes into pixel sizes */
 		for ( i=0 ; i<visibleColumns.length ; i++ ) {
@@ -5952,31 +6345,42 @@
 		 * the web- browser. No custom sizes can be set in order for this to happen,
 		 * nor scrolling used
 		 */
-		if ( ! userInputs && ! scrollX && ! scrollY &&
-		    columnCount == _fnVisbleColumns( oSettings ) &&
-			columnCount == headerCells.length
+		if ( ie67 || ! userInputs && ! scrollX && ! scrollY &&
+		     columnCount == _fnVisbleColumns( oSettings ) &&
+		     columnCount == headerCells.length
 		) {
 			for ( i=0 ; i<columnCount ; i++ ) {
-				columns[i].sWidth = _fnStringToCss( headerCells.eq(i).width() );
+				var colIdx = _fnVisibleToColumnIndex( oSettings, i );
+	
+				if ( colIdx !== null ) {
+					columns[ colIdx ].sWidth = _fnStringToCss( headerCells.eq(i).width() );
+				}
 			}
 		}
 		else
 		{
-			// Otherwise construct a single row table with the widest node in the
-			// data, assign any user defined widths, then insert it into the DOM and
-			// allow the browser to do all the hard work of calculating table widths
+			// Otherwise construct a single row, worst case, table with the widest
+			// node in the data, assign any user defined widths, then insert it into
+			// the DOM and allow the browser to do all the hard work of calculating
+			// table widths
 			var tmpTable = $(table).clone() // don't use cloneNode - IE8 will remove events on the main table
-				.empty()
 				.css( 'visibility', 'hidden' )
-				.removeAttr( 'id' )
-				.append( $(oSettings.nTHead).clone( false ) )
-				.append( $(oSettings.nTFoot).clone( false ) )
-				.append( $('<tbody><tr/></tbody>') );
+				.removeAttr( 'id' );
+	
+			// Clean up the table body
+			tmpTable.find('tbody tr').remove();
+			var tr = $('<tr/>').appendTo( tmpTable.find('tbody') );
+	
+			// Clone the table header and footer - we can't use the header / footer
+			// from the cloned table, since if scrolling is active, the table's
+			// real header and footer are contained in different table tags
+			tmpTable.find('thead, tfoot').remove();
+			tmpTable
+				.append( $(oSettings.nTHead).clone() )
+				.append( $(oSettings.nTFoot).clone() );
 	
 			// Remove any assigned widths from the footer (from scrolling)
 			tmpTable.find('tfoot th, tfoot td').css('width', '');
-	
-			var tr = tmpTable.find( 'tbody tr' );
 	
 			// Apply custom sizing to the cloned header
 			headerCells = _fnGetUniqueThs( oSettings, tmpTable.find('thead')[0] );
@@ -5987,6 +6391,19 @@
 				headerCells[i].style.width = column.sWidthOrig !== null && column.sWidthOrig !== '' ?
 					_fnStringToCss( column.sWidthOrig ) :
 					'';
+	
+				// For scrollX we need to force the column width otherwise the
+				// browser will collapse it. If this width is smaller than the
+				// width the column requires, then it will have no effect
+				if ( column.sWidthOrig && scrollX ) {
+					$( headerCells[i] ).append( $('<div/>').css( {
+						width: column.sWidthOrig,
+						margin: 0,
+						padding: 0,
+						border: 0,
+						height: 1
+					} ) );
+				}
 			}
 	
 			// Find the widest cell for each column and put it into the table
@@ -6002,8 +6419,28 @@
 				}
 			}
 	
-			// Table has been built, attach to the document so we can work with it
-			tmpTable.appendTo( tableContainer );
+			// Tidy the temporary table - remove name attributes so there aren't
+			// duplicated in the dom (radio elements for example)
+			$('[name]', tmpTable).removeAttr('name');
+	
+			// Table has been built, attach to the document so we can work with it.
+			// A holding element is used, positioned at the top of the container
+			// with minimal height, so it has no effect on if the container scrolls
+			// or not. Otherwise it might trigger scrolling when it actually isn't
+			// needed
+			var holder = $('<div/>').css( scrollX || scrollY ?
+					{
+						position: 'absolute',
+						top: 0,
+						left: 0,
+						height: 1,
+						right: 0,
+						overflow: 'hidden'
+					} :
+					{}
+				)
+				.append( tmpTable )
+				.appendTo( tableContainer );
 	
 			// When scrolling (X or Y) we want to set the width of the table as 
 			// appropriate. However, when not scrolling leave the table width as it
@@ -6013,57 +6450,50 @@
 			}
 			else if ( scrollX ) {
 				tmpTable.css( 'width', 'auto' );
+				tmpTable.removeAttr('width');
 	
-				if ( tmpTable.width() < tableContainer.offsetWidth ) {
-					tmpTable.width( tableContainer.offsetWidth );
+				// If there is no width attribute or style, then allow the table to
+				// collapse
+				if ( tmpTable.width() < tableContainer.clientWidth && tableWidthAttr ) {
+					tmpTable.width( tableContainer.clientWidth );
 				}
 			}
 			else if ( scrollY ) {
-				tmpTable.width( tableContainer.offsetWidth );
+				tmpTable.width( tableContainer.clientWidth );
 			}
 			else if ( tableWidthAttr ) {
 				tmpTable.width( tableWidthAttr );
 			}
 	
-			// Take into account the y scrollbar
-			_fnScrollingWidthAdjust( oSettings, tmpTable[0] );
-	
-			// Browsers need a bit of a hand when a width is assigned to any columns
-			// when x-scrolling as they tend to collapse the table to the min-width,
-			// even if we sent the column widths. So we need to keep track of what
-			// the table width should be by summing the user given values, and the
-			// automatic values
-			if ( scrollX )
-			{
-				var total = 0;
-	
-				for ( i=0 ; i<visibleColumns.length ; i++ ) {
-					column = columns[ visibleColumns[i] ];
-					outerWidth = $(headerCells[i]).outerWidth();
-	
-					total += column.sWidthOrig === null ?
-						outerWidth :
-						parseInt( column.sWidth, 10 ) + outerWidth - $(headerCells[i]).width();
-				}
-	
-				tmpTable.width( _fnStringToCss( total ) );
-				table.style.width = _fnStringToCss( total );
-			}
-	
-			// Get the width of each column in the constructed table
+			// Get the width of each column in the constructed table - we need to
+			// know the inner width (so it can be assigned to the other table's
+			// cells) and the outer width so we can calculate the full width of the
+			// table. This is safe since DataTables requires a unique cell for each
+			// column, but if ever a header can span multiple columns, this will
+			// need to be modified.
+			var total = 0;
 			for ( i=0 ; i<visibleColumns.length ; i++ ) {
-				column = columns[ visibleColumns[i] ];
-				width = $(headerCells[i]).width();
+				var cell = $(headerCells[i]);
+				var border = cell.outerWidth() - cell.width();
 	
-				if ( width ) {
-					column.sWidth = _fnStringToCss( width );
-				}
+				// Use getBounding... where possible (not IE8-) because it can give
+				// sub-pixel accuracy, which we then want to round up!
+				var bounding = browser.bBounding ?
+					Math.ceil( headerCells[i].getBoundingClientRect().width ) :
+					cell.outerWidth();
+	
+				// Total is tracked to remove any sub-pixel errors as the outerWidth
+				// of the table might not equal the total given here (IE!).
+				total += bounding;
+	
+				// Width for each column to use
+				columns[ visibleColumns[i] ].sWidth = _fnStringToCss( bounding - border );
 			}
 	
-			table.style.width = _fnStringToCss( tmpTable.css('width') );
+			table.style.width = _fnStringToCss( total );
 	
 			// Finished with the table - ditch it
-			tmpTable.remove();
+			holder.remove();
 		}
 	
 		// If there is a width attr, we want to attach an event listener which
@@ -6075,9 +6505,20 @@
 		}
 	
 		if ( (tableWidthAttr || scrollX) && ! oSettings._reszEvt ) {
-			$(window).bind('resize.DT-'+oSettings.sInstance, _fnThrottle( function () {
-				_fnAdjustColumnSizing( oSettings );
-			} ) );
+			var bindResize = function () {
+				$(window).bind('resize.DT-'+oSettings.sInstance, _fnThrottle( function () {
+					_fnAdjustColumnSizing( oSettings );
+				} ) );
+			};
+	
+			// IE6/7 will crash if we bind a resize event handler on page load.
+			// To be removed in 1.11 which drops IE6/7 support
+			if ( ie67 ) {
+				setTimeout( bindResize, 1000 );
+			}
+			else {
+				bindResize();
+			}
 	
 			oSettings._reszEvt = true;
 		}
@@ -6145,27 +6586,6 @@
 	
 	
 	/**
-	 * Adjust a table's width to take account of vertical scroll bar
-	 *  @param {object} oSettings dataTables settings object
-	 *  @param {node} n table node
-	 *  @memberof DataTable#oApi
-	 */
-	
-	function _fnScrollingWidthAdjust ( settings, n )
-	{
-		var scroll = settings.oScroll;
-	
-		if ( scroll.sX || scroll.sY ) {
-			// When y-scrolling only, we want to remove the width of the scroll bar
-			// so the table + scroll bar will fit into the area available, otherwise
-			// we fix the table at its current size with no adjustment
-			var correction = ! scroll.sX ? scroll.iBarWidth : 0;
-			n.style.width = _fnStringToCss( $(n).outerWidth() - correction );
-		}
-	}
-	
-	
-	/**
 	 * Get the widest node
 	 *  @param {object} settings dataTables settings object
 	 *  @param {int} colIdx column of interest
@@ -6200,6 +6620,7 @@
 		for ( var i=0, ien=settings.aoData.length ; i<ien ; i++ ) {
 			s = _fnGetCellData( settings, i, colIdx, 'display' )+'';
 			s = s.replace( __re_html_remove, '' );
+			s = s.replace( /&nbsp;/g, ' ' );
 	
 			if ( s.length > max ) {
 				max = s.length;
@@ -6236,53 +6657,6 @@
 	}
 	
 	
-	/**
-	 * Get the width of a scroll bar in this browser being used
-	 *  @returns {int} width in pixels
-	 *  @memberof DataTable#oApi
-	 */
-	function _fnScrollBarWidth ()
-	{
-		// On first run a static variable is set, since this is only needed once.
-		// Subsequent runs will just use the previously calculated value
-		if ( ! DataTable.__scrollbarWidth ) {
-			var inner = $('<p/>').css( {
-				width: '100%',
-				height: 200,
-				padding: 0
-			} )[0];
-	
-			var outer = $('<div/>')
-				.css( {
-					position: 'absolute',
-					top: 0,
-					left: 0,
-					width: 200,
-					height: 150,
-					padding: 0,
-					overflow: 'hidden',
-					visibility: 'hidden'
-				} )
-				.append( inner )
-				.appendTo( 'body' );
-	
-			var w1 = inner.offsetWidth;
-			outer.css( 'overflow', 'scroll' );
-			var w2 = inner.offsetWidth;
-	
-			if ( w1 === w2 ) {
-				w2 = outer[0].clientWidth;
-			}
-	
-			outer.remove();
-	
-			DataTable.__scrollbarWidth = w1 - w2;
-		}
-	
-		return DataTable.__scrollbarWidth;
-	}
-	
-	
 	
 	function _fnSortFlatten ( settings )
 	{
@@ -6302,7 +6676,7 @@
 				}
 				else {
 					// 2D array
-					nestedSort.push.apply( nestedSort, a );
+					$.merge( nestedSort, a );
 				}
 			};
 	
@@ -6570,6 +6944,10 @@
 				// Yes, modify the sort
 				nextSortIdx = next( sorting[sortIdx], true );
 	
+				if ( nextSortIdx === null && sorting.length === 1 ) {
+					nextSortIdx = 0; // can't remove sorting completely
+				}
+	
 				if ( nextSortIdx === null ) {
 					sorting.splice( sortIdx, 1 );
 				}
@@ -6804,31 +7182,43 @@
 	
 		// Restore key features - todo - for 1.11 this needs to be done by
 		// subscribed events
-		settings._iDisplayStart    = state.start;
-		settings.iInitDisplayStart = state.start;
-		settings._iDisplayLength   = state.length;
-		settings.aaSorting = [];
+		if ( state.start !== undefined ) {
+			settings._iDisplayStart    = state.start;
+			settings.iInitDisplayStart = state.start;
+		}
+		if ( state.length !== undefined ) {
+			settings._iDisplayLength   = state.length;
+		}
 	
 		// Order
-		$.each( state.order, function ( i, col ) {
-			settings.aaSorting.push( col[0] >= columns.length ?
-				[ 0, col[1] ] :
-				col
-			);
-		} );
+		if ( state.order !== undefined ) {
+			settings.aaSorting = [];
+			$.each( state.order, function ( i, col ) {
+				settings.aaSorting.push( col[0] >= columns.length ?
+					[ 0, col[1] ] :
+					col
+				);
+			} );
+		}
 	
 		// Search
-		$.extend( settings.oPreviousSearch, _fnSearchToHung( state.search ) );
+		if ( state.search !== undefined ) {
+			$.extend( settings.oPreviousSearch, _fnSearchToHung( state.search ) );
+		}
 	
 		// Columns
 		for ( i=0, ien=state.columns.length ; i<ien ; i++ ) {
 			var col = state.columns[i];
 	
 			// Visibility
-			columns[i].bVisible = col.visible;
+			if ( col.visible !== undefined ) {
+				columns[i].bVisible = col.visible;
+			}
 	
 			// Search
-			$.extend( settings.aoPreSearchCols[i], _fnSearchToHung( col.search ) );
+			if ( col.search !== undefined ) {
+				$.extend( settings.aoPreSearchCols[i], _fnSearchToHung( col.search ) );
+			}
 		}
 	
 		_fnCallbackFire( settings, 'aoStateLoaded', 'stateLoaded', [settings, state] );
@@ -6863,7 +7253,7 @@
 	function _fnLog( settings, level, msg, tn )
 	{
 		msg = 'DataTables warning: '+
-			(settings!==null ? 'table id='+settings.sTableId+' - ' : '')+msg;
+			(settings ? 'table id='+settings.sTableId+' - ' : '')+msg;
 	
 		if ( tn ) {
 			msg += '. For more information about this error, please see '+
@@ -6875,7 +7265,9 @@
 			var ext = DataTable.ext;
 			var type = ext.sErrMode || ext.errMode;
 	
-			_fnCallbackFire( settings, null, 'error', [ settings, tn, msg ] );
+			if ( settings ) {
+				_fnCallbackFire( settings, null, 'error', [ settings, tn, msg ] );
+			}
 	
 			if ( type == 'alert' ) {
 				alert( msg );
@@ -7028,13 +7420,13 @@
 	 *  @param {object} settings dataTables settings object
 	 *  @param {string} callbackArr Name of the array storage for the callbacks in
 	 *      oSettings
-	 *  @param {string} event Name of the jQuery custom event to trigger. If null no
-	 *      trigger is fired
+	 *  @param {string} eventName Name of the jQuery custom event to trigger. If
+	 *      null no trigger is fired
 	 *  @param {array} args Array of arguments to pass to the callback function /
 	 *      trigger
 	 *  @memberof DataTable#oApi
 	 */
-	function _fnCallbackFire( settings, callbackArr, e, args )
+	function _fnCallbackFire( settings, callbackArr, eventName, args )
 	{
 		var ret = [];
 	
@@ -7044,8 +7436,12 @@
 			} );
 		}
 	
-		if ( e !== null ) {
-			$(settings.nTable).trigger( e+'.dt', args );
+		if ( eventName !== null ) {
+			var e = $.Event( eventName+'.dt' );
+	
+			$(settings.nTable).trigger( e, args );
+	
+			ret.push( e.result );
 		}
 	
 		return ret;
@@ -7457,8 +7853,8 @@
 		this.fnDraw = function( complete )
 		{
 			// Note that this isn't an exact match to the old call to _fnDraw - it takes
-			// into account the new data, but can old position.
-			this.api( true ).draw( ! complete );
+			// into account the new data, but can hold position.
+			this.api( true ).draw( complete );
 		};
 		
 		
@@ -7978,13 +8374,14 @@
 			
 			/* Create the settings object for this table and set some of the default parameters */
 			var oSettings = $.extend( true, {}, DataTable.models.oSettings, {
-				"nTable":        this,
-				"oApi":          _that.internal,
-				"oInit":         oInit,
 				"sDestroyWidth": $this[0].style.width,
 				"sInstance":     sId,
 				"sTableId":      sId
 			} );
+			oSettings.nTable = this;
+			oSettings.oApi   = _that.internal;
+			oSettings.oInit  = oInit;
+			
 			allSettings.push( oSettings );
 			
 			// Need to add the instance after the instance after the settings object has been added
@@ -8045,6 +8442,7 @@
 				"fnStateSaveCallback",
 				"renderer",
 				"searchDelay",
+				"rowId",
 				[ "iCookieDuration", "iStateDuration" ], // backwards compat
 				[ "oSearch", "oPreviousSearch" ],
 				[ "aoSearchCols", "aoPreSearchCols" ],
@@ -8071,6 +8469,11 @@
 			_fnCallbackReg( oSettings, 'aoFooterCallback',     oInit.fnFooterCallback,    'user' );
 			_fnCallbackReg( oSettings, 'aoInitComplete',       oInit.fnInitComplete,      'user' );
 			_fnCallbackReg( oSettings, 'aoPreDrawCallback',    oInit.fnPreDrawCallback,   'user' );
+			
+			oSettings.rowIdFn = _fnGetObjectDataFn( oInit.rowId );
+			
+			/* Browser support detection */
+			_fnBrowserDetect( oSettings );
 			
 			var oClasses = oSettings.oClasses;
 			
@@ -8101,14 +8504,6 @@
 			}
 			$this.addClass( oClasses.sTable );
 			
-			/* Calculate the scroll bar width and cache it for use later on */
-			if ( oSettings.oScroll.sX !== "" || oSettings.oScroll.sY !== "" )
-			{
-				oSettings.oScroll.iBarWidth = _fnScrollBarWidth();
-			}
-			if ( oSettings.oScroll.sX === true ) { // Easy initialisation of x-scrolling
-				oSettings.oScroll.sX = '100%';
-			}
 			
 			if ( oSettings.iInitDisplayStart === undefined )
 			{
@@ -8165,7 +8560,7 @@
 			
 			/* Remove row stripe classes if they are already on the table row */
 			var stripeClasses = oSettings.asStripeClasses;
-			var rowOne = $('tbody tr', this).eq(0);
+			var rowOne = $this.children('tbody').find('tr').eq(0);
 			if ( $.inArray( true, $.map( stripeClasses, function(el, i) {
 				return rowOne.hasClass(el);
 			} ) ) !== -1 ) {
@@ -8219,7 +8614,7 @@
 					return cell.getAttribute( 'data-'+name ) !== null ? name : null;
 				};
 			
-				$.each( _fnGetRowElements( oSettings, rowOne[0] ).cells, function (i, cell) {
+				$( rowOne[0] ).children('th, td').each( function (i, cell) {
 					var col = oSettings.aoColumns[i];
 			
 					if ( col.mData === i ) {
@@ -8300,9 +8695,6 @@
 			 * Final init
 			 * Cache the header, body and footer as required, creating them if needed
 			 */
-			
-			/* Browser support detection */
-			_fnBrowserDetect( oSettings );
 			
 			// Work around for Webkit bug 83867 - store the caption-side before removing from doc
 			var captions = $this.children('caption').each( function () {
@@ -8541,17 +8933,15 @@
 	 */
 	_Api = function ( context, data )
 	{
-		if ( ! this instanceof _Api ) {
-			throw 'DT API must be constructed as a new object';
-			// or should it do the 'new' for the caller?
-			// return new _Api.apply( this, arguments );
+		if ( ! (this instanceof _Api) ) {
+			return new _Api( context, data );
 		}
 	
 		var settings = [];
 		var ctxSettings = function ( o ) {
 			var a = _toSettings( o );
 			if ( a ) {
-				settings.push.apply( settings, a );
+				settings = settings.concat( a );
 			}
 		};
 	
@@ -8569,7 +8959,7 @@
 	
 		// Initial data
 		if ( data ) {
-			this.push.apply( this, data.toArray ? data.toArray() : data );
+			$.merge( this, data );
 		}
 	
 		// selector
@@ -8584,23 +8974,25 @@
 	
 	DataTable.Api = _Api;
 	
-	_Api.prototype = /** @lends DataTables.Api */{
-		/**
-		 * Return a new Api instance, comprised of the data held in the current
-		 * instance, join with the other array(s) and/or value(s).
-		 *
-		 * An alias for `Array.prototype.concat`.
-		 *
-		 * @type method
-		 * @param {*} value1 Arrays and/or values to concatenate.
-		 * @param {*} [...] Additional arrays and/or values to concatenate.
-		 * @returns {DataTables.Api} New API instance, comprising of the combined
-		 *   array.
-		 */
+	// Don't destroy the existing prototype, just extend it. Required for jQuery 2's
+	// isPlainObject.
+	$.extend( _Api.prototype, {
+		any: function ()
+		{
+			return this.count() !== 0;
+		},
+	
+	
 		concat:  __arrayProto.concat,
 	
 	
 		context: [], // array of table settings objects
+	
+	
+		count: function ()
+		{
+			return this.flatten().length;
+		},
 	
 	
 		each: function ( fn )
@@ -8663,7 +9055,6 @@
 			return -1;
 		},
 	
-		// Note that `alwaysNew` is internal - use iteratorNew externally
 		iterator: function ( flatten, type, fn, alwaysNew ) {
 			var
 				a = [], ret,
@@ -8831,7 +9222,7 @@
 	
 	
 		unshift: __arrayProto.unshift
-	};
+	} );
 	
 	
 	_Api.extend = function ( scope, obj, ext )
@@ -9086,15 +9477,21 @@
 	
 	/**
 	 * Redraw the tables in the current context.
-	 *
-	 * @param {boolean} [reset=true] Reset (default) or hold the current paging
-	 *   position. A full re-sort and re-filter is performed when this method is
-	 *   called, which is why the pagination reset is the default action.
-	 * @returns {DataTables.Api} this
 	 */
-	_api_register( 'draw()', function ( resetPaging ) {
+	_api_register( 'draw()', function ( paging ) {
 		return this.iterator( 'table', function ( settings ) {
-			_fnReDraw( settings, resetPaging===false );
+			if ( paging === 'page' ) {
+				_fnDraw( settings );
+			}
+			else {
+				if ( typeof paging === 'string' ) {
+					paging = paging === 'full-hold' ?
+						false :
+						true;
+				}
+	
+				_fnReDraw( settings, paging===false );
+			}
 		} );
 	} );
 	
@@ -9157,7 +9554,7 @@
 		var
 			settings   = this.context[0],
 			start      = settings._iDisplayStart,
-			len        = settings._iDisplayLength,
+			len        = settings.oFeatures.bPaginate ? settings._iDisplayLength : -1,
 			visRecords = settings.fnRecordsDisplay(),
 			all        = len === -1;
 	
@@ -9168,7 +9565,8 @@
 			"end":            settings.fnDisplayEnd(),
 			"length":         len,
 			"recordsTotal":   settings.fnRecordsTotal(),
-			"recordsDisplay": visRecords
+			"recordsDisplay": visRecords,
+			"serverSide":     _fnDataSource( settings ) === 'ssp'
 		};
 	} );
 	
@@ -9203,13 +9601,28 @@
 	
 	
 	var __reload = function ( settings, holdPosition, callback ) {
+		// Use the draw event to trigger a callback
+		if ( callback ) {
+			var api = new _Api( settings );
+	
+			api.one( 'draw', function () {
+				callback( api.ajax.json() );
+			} );
+		}
+	
 		if ( _fnDataSource( settings ) == 'ssp' ) {
 			_fnReDraw( settings, holdPosition );
 		}
 		else {
-			// Trigger xhr
 			_fnProcessingDisplay( settings, true );
 	
+			// Cancel an existing request
+			var xhr = settings.jqXHR;
+			if ( xhr && xhr.readyState !== 4 ) {
+				xhr.abort();
+			}
+	
+			// Trigger xhr
 			_fnBuildAjax( settings, [], function( json ) {
 				_fnClearTable( settings );
 	
@@ -9220,16 +9633,6 @@
 	
 				_fnReDraw( settings, holdPosition );
 				_fnProcessingDisplay( settings, false );
-			} );
-		}
-	
-		// Use the draw event to trigger a callback, regardless of if it is an async
-		// or sync draw
-		if ( callback ) {
-			var api = new _Api( settings );
-	
-			api.one( 'draw', function () {
-				callback( api.ajax.json() );
 			} );
 		}
 	};
@@ -9347,7 +9750,7 @@
 	
 	
 	
-	var _selector_run = function ( selector, select )
+	var _selector_run = function ( type, selector, selectFn, settings, opts )
 	{
 		var
 			out = [], res,
@@ -9366,15 +9769,23 @@
 				[ selector[i] ];
 	
 			for ( j=0, jen=a.length ; j<jen ; j++ ) {
-				res = select( typeof a[j] === 'string' ? $.trim(a[j]) : a[j] );
+				res = selectFn( typeof a[j] === 'string' ? $.trim(a[j]) : a[j] );
 	
 				if ( res && res.length ) {
-					out.push.apply( out, res );
+					out = out.concat( res );
 				}
 			}
 		}
 	
-		return out;
+		// selector extensions
+		var ext = _ext.selector[ type ];
+		if ( ext.length ) {
+			for ( i=0, ien=ext.length ; i<ien ; i++ ) {
+				out = ext[i]( settings, opts, out );
+			}
+		}
+	
+		return _unique( out );
 	};
 	
 	
@@ -9386,15 +9797,15 @@
 	
 		// Backwards compatibility for 1.9- which used the terminology filter rather
 		// than search
-		if ( opts.filter && ! opts.search ) {
+		if ( opts.filter && opts.search === undefined ) {
 			opts.search = opts.filter;
 		}
 	
-		return {
-			search: opts.search || 'none',
-			order:  opts.order  || 'current',
-			page:   opts.page   || 'all'
-		};
+		return $.extend( {
+			search: 'none',
+			order: 'current',
+			page: 'all'
+		}, opts );
 	};
 	
 	
@@ -9406,6 +9817,7 @@
 				// Assign the first element to the first item in the instance
 				// and truncate the instance and context
 				inst[0] = inst[i];
+				inst[0].length = 1;
 				inst.length = 1;
 				inst.context = [ inst.context[i] ];
 	
@@ -9492,7 +9904,7 @@
 	
 	var __row_selector = function ( settings, selector, opts )
 	{
-		return _selector_run( selector, function ( sel ) {
+		var run = function ( sel ) {
 			var selInt = _intVal( sel );
 			var i, ien;
 	
@@ -9529,10 +9941,38 @@
 	
 			// Selector - node
 			if ( sel.nodeName ) {
-				if ( $.inArray( sel, nodes ) !== -1 ) {
-					return [ sel._DT_RowIndex ]; // sel is a TR node that is in the table
-					                             // and DataTables adds a prop for fast lookup
+				if ( sel._DT_RowIndex !== undefined ) {
+					return [ sel._DT_RowIndex ]; // Property added by DT for fast lookup
 				}
+				else if ( sel._DT_CellIndex ) {
+					return [ sel._DT_CellIndex.row ];
+				}
+				else {
+					var host = $(sel).closest('*[data-dt-row]');
+					return host.length ?
+						[ host.data('dt-row') ] :
+						[];
+				}
+			}
+	
+			// ID selector. Want to always be able to select rows by id, regardless
+			// of if the tr element has been created or not, so can't rely upon
+			// jQuery here - hence a custom implementation. This does not match
+			// Sizzle's fast selector or HTML4 - in HTML5 the ID can be anything,
+			// but to select it using a CSS selector engine (like Sizzle or
+			// querySelect) it would need to need to be escaped for some characters.
+			// DataTables simplifies this for row selectors since you can select
+			// only a row. A # indicates an id any anything that follows is the id -
+			// unescaped.
+			if ( typeof sel === 'string' && sel.charAt(0) === '#' ) {
+				// get row index from id
+				var rowObj = settings.aIds[ sel.replace( /^#/, '' ) ];
+				if ( rowObj !== undefined ) {
+					return [ rowObj.idx ];
+				}
+	
+				// need to fall through to jQuery in case there is DOM id that
+				// matches
 			}
 	
 			// Selector - jQuery selector string, array of nodes or jQuery object/
@@ -9544,13 +9984,12 @@
 					return this._DT_RowIndex;
 				} )
 				.toArray();
-		} );
+		};
+	
+		return _selector_run( 'row', selector, run, settings, opts );
 	};
 	
 	
-	/**
-	 *
-	 */
 	_api_register( 'rows()', function ( selector, opts ) {
 		// argument shifting
 		if ( selector === undefined ) {
@@ -9573,7 +10012,6 @@
 	
 		return inst;
 	} );
-	
 	
 	_api_register( 'rows().nodes()', function () {
 		return this.iterator( 'row', function ( settings, row ) {
@@ -9606,23 +10044,49 @@
 		}, 1 );
 	} );
 	
+	_api_registerPlural( 'rows().ids()', 'row().id()', function ( hash ) {
+		var a = [];
+		var context = this.context;
+	
+		// `iterator` will drop undefined values, but in this case we want them
+		for ( var i=0, ien=context.length ; i<ien ; i++ ) {
+			for ( var j=0, jen=this[i].length ; j<jen ; j++ ) {
+				var id = context[i].rowIdFn( context[i].aoData[ this[i][j] ]._aData );
+				a.push( (hash === true ? '#' : '' )+ id );
+			}
+		}
+	
+		return new _Api( context, a );
+	} );
+	
 	_api_registerPlural( 'rows().remove()', 'row().remove()', function () {
 		var that = this;
 	
-		return this.iterator( 'row', function ( settings, row, thatIdx ) {
+		this.iterator( 'row', function ( settings, row, thatIdx ) {
 			var data = settings.aoData;
+			var rowData = data[ row ];
+			var i, ien, j, jen;
+			var loopRow, loopCells;
 	
 			data.splice( row, 1 );
 	
-			// Update the _DT_RowIndex parameter on all rows in the table
-			for ( var i=0, ien=data.length ; i<ien ; i++ ) {
-				if ( data[i].nTr !== null ) {
-					data[i].nTr._DT_RowIndex = i;
+			// Update the cached indexes
+			for ( i=0, ien=data.length ; i<ien ; i++ ) {
+				loopRow = data[i];
+				loopCells = loopRow.anCells;
+	
+				// Rows
+				if ( loopRow.nTr !== null ) {
+					loopRow.nTr._DT_RowIndex = i;
+				}
+	
+				// Cells
+				if ( loopCells !== null ) {
+					for ( j=0, jen=loopCells.length ; j<jen ; j++ ) {
+						loopCells[j]._DT_CellIndex.row = i;
+					}
 				}
 			}
-	
-			// Remove the target row from the search array
-			var displayIndex = $.inArray( row, settings.aiDisplay );
 	
 			// Delete from the display arrays
 			_fnDeleteIndex( settings.aiDisplayMaster, row );
@@ -9631,7 +10095,21 @@
 	
 			// Check for an 'overflow' they case for displaying the table
 			_fnLengthOverflow( settings );
+	
+			// Remove the row's ID reference if there is one
+			var id = settings.rowIdFn( rowData._aData );
+			if ( id !== undefined ) {
+				delete settings.aIds[ id ];
+			}
 		} );
+	
+		this.iterator( 'table', function ( settings ) {
+			for ( var i=0, ien=settings.aoData.length ; i<ien ; i++ ) {
+				settings.aoData[i].idx = i;
+			}
+		} );
+	
+		return this;
 	} );
 	
 	
@@ -9657,7 +10135,7 @@
 		// Return an Api.rows() extended instance, so rows().nodes() etc can be used
 		var modRows = this.rows( -1 );
 		modRows.pop();
-		modRows.push.apply( modRows, newRows.toArray() );
+		$.merge( modRows, newRows );
 	
 		return modRows;
 	} );
@@ -9728,6 +10206,14 @@
 		// Convert to array of TR elements
 		var rows = [];
 		var addRow = function ( r, k ) {
+			// Recursion to allow for arrays of jQuery objects
+			if ( $.isArray( r ) || r instanceof $ ) {
+				for ( var i=0, ien=r.length ; i<ien ; i++ ) {
+					addRow( r[i], k );
+				}
+				return;
+			}
+	
 			// If we get a TR element, then just add it directly - up to the dev
 			// to add the correct number of columns etc
 			if ( r.nodeName && r.nodeName.toLowerCase() === 'tr' ) {
@@ -9745,14 +10231,7 @@
 			}
 		};
 	
-		if ( $.isArray( data ) || data instanceof $ ) {
-			for ( var i=0, ien=data.length ; i<ien ; i++ ) {
-				addRow( data[i], klass );
-			}
-		}
-		else {
-			addRow( data, klass );
-		}
+		addRow( data, klass );
 	
 		if ( row._details ) {
 			row._details.remove();
@@ -9774,7 +10253,7 @@
 		if ( ctx.length ) {
 			var row = ctx[0].aoData[ idx !== undefined ? idx : api[0] ];
 	
-			if ( row._details ) {
+			if ( row && row._details ) {
 				row._details.remove();
 	
 				row._detailsShow = undefined;
@@ -9977,7 +10456,7 @@
 			names = _pluck( columns, 'sName' ),
 			nodes = _pluck( columns, 'nTh' );
 	
-		return _selector_run( selector, function ( s ) {
+		var run = function ( s ) {
 			var selInt = _intVal( s );
 	
 			// Selector - all
@@ -10032,18 +10511,38 @@
 						return $.map( names, function (name, i) {
 							return name === match[1] ? i : null;
 						} );
+	
+					default:
+						return [];
 				}
 			}
-			else {
-				// jQuery selector on the TH elements for the columns
-				return $( nodes )
-					.filter( s )
-					.map( function () {
-						return $.inArray( this, nodes ); // `nodes` is column index complete and in order
-					} )
-					.toArray();
+	
+			// Cell in the table body
+			if ( s.nodeName && s._DT_CellIndex ) {
+				return [ s._DT_CellIndex.column ];
 			}
-		} );
+	
+			// jQuery selector on the TH elements for the columns
+			var jqResult = $( nodes )
+				.filter( s )
+				.map( function () {
+					return $.inArray( this, nodes ); // `nodes` is column index complete and in order
+				} )
+				.toArray();
+	
+			if ( jqResult.length || ! s.nodeName ) {
+				return jqResult;
+			}
+	
+			// Otherwise a node which might have a `dt-column` data attribute, or be
+			// a child or such an element
+			var host = $(s).closest('*[data-dt-column]');
+			return host.length ?
+				[ host.data('dt-column') ] :
+				[];
+		};
+	
+		return _selector_run( 'column', selector, run, settings, opts );
 	};
 	
 	
@@ -10093,22 +10592,14 @@
 		if ( recalc === undefined || recalc ) {
 			// Automatically adjust column sizing
 			_fnAdjustColumnSizing( settings );
-	
-			// Realign columns for scrolling
-			if ( settings.oScroll.sX || settings.oScroll.sY ) {
-				_fnScrollDraw( settings );
-			}
 		}
 	
-		_fnCallbackFire( settings, null, 'column-visibility', [settings, column, vis] );
+		_fnCallbackFire( settings, null, 'column-visibility', [settings, column, vis, recalc] );
 	
 		_fnSaveState( settings );
 	};
 	
 	
-	/**
-	 *
-	 */
 	_api_register( 'columns()', function ( selector, opts ) {
 		// argument shifting
 		if ( selector === undefined ) {
@@ -10132,41 +10623,27 @@
 		return inst;
 	} );
 	
-	
-	/**
-	 *
-	 */
 	_api_registerPlural( 'columns().header()', 'column().header()', function ( selector, opts ) {
 		return this.iterator( 'column', function ( settings, column ) {
 			return settings.aoColumns[column].nTh;
 		}, 1 );
 	} );
 	
-	
-	/**
-	 *
-	 */
 	_api_registerPlural( 'columns().footer()', 'column().footer()', function ( selector, opts ) {
 		return this.iterator( 'column', function ( settings, column ) {
 			return settings.aoColumns[column].nTf;
 		}, 1 );
 	} );
 	
-	
-	/**
-	 *
-	 */
 	_api_registerPlural( 'columns().data()', 'column().data()', function () {
 		return this.iterator( 'column-rows', __columnData, 1 );
 	} );
-	
 	
 	_api_registerPlural( 'columns().dataSrc()', 'column().dataSrc()', function () {
 		return this.iterator( 'column', function ( settings, column ) {
 			return settings.aoColumns[column].mData;
 		}, 1 );
 	} );
-	
 	
 	_api_registerPlural( 'columns().cache()', 'column().cache()', function ( type ) {
 		return this.iterator( 'column-rows', function ( settings, column, i, j, rows ) {
@@ -10176,14 +10653,11 @@
 		}, 1 );
 	} );
 	
-	
 	_api_registerPlural( 'columns().nodes()', 'column().nodes()', function () {
 		return this.iterator( 'column-rows', function ( settings, column, i, j, rows ) {
 			return _pluck_order( settings.aoData, rows, 'anCells', column ) ;
 		}, 1 );
 	} );
-	
-	
 	
 	_api_registerPlural( 'columns().visible()', 'column().visible()', function ( vis, calc ) {
 		return this.iterator( 'column', function ( settings, column ) {
@@ -10194,8 +10668,6 @@
 		} );
 	} );
 	
-	
-	
 	_api_registerPlural( 'columns().indexes()', 'column().index()', function ( type ) {
 		return this.iterator( 'column', function ( settings, column ) {
 			return type === 'visible' ?
@@ -10204,28 +10676,12 @@
 		}, 1 );
 	} );
 	
-	
-	// _api_register( 'columns().show()', function () {
-	// 	var selector = this.selector;
-	// 	return this.columns( selector.cols, selector.opts ).visible( true );
-	// } );
-	
-	
-	// _api_register( 'columns().hide()', function () {
-	// 	var selector = this.selector;
-	// 	return this.columns( selector.cols, selector.opts ).visible( false );
-	// } );
-	
-	
-	
 	_api_register( 'columns.adjust()', function () {
 		return this.iterator( 'table', function ( settings ) {
 			_fnAdjustColumnSizing( settings );
 		}, 1 );
 	} );
 	
-	
-	// Convert from one column index type, to another type
 	_api_register( 'column.index()', function ( type, idx ) {
 		if ( this.context.length !== 0 ) {
 			var ctx = this.context[0];
@@ -10238,7 +10694,6 @@
 			}
 		}
 	} );
-	
 	
 	_api_register( 'column()', function ( selector, opts ) {
 		return _selector_first( this.columns( selector, opts ) );
@@ -10257,7 +10712,7 @@
 		var columns = settings.aoColumns.length;
 		var a, i, ien, j, o, host;
 	
-		return _selector_run( selector, function ( s ) {
+		var run = function ( s ) {
 			var fnSelector = typeof s === 'function';
 	
 			if ( s === null || s === undefined || fnSelector ) {
@@ -10275,9 +10730,9 @@
 	
 						if ( fnSelector ) {
 							// Selector - function
-							host = settings.aoData[ row ];
+							host = data[ row ];
 	
-							if ( s( o, _fnGetCellData(settings, row, j), host.anCells[j] ) ) {
+							if ( s( o, _fnGetCellData(settings, row, j), host.anCells ? host.anCells[j] : null ) ) {
 								a.push( o );
 							}
 						}
@@ -10297,18 +10752,33 @@
 			}
 	
 			// Selector - jQuery filtered cells
-			return allCells
+			var jqResult = allCells
 				.filter( s )
 				.map( function (i, el) {
-					row = el.parentNode._DT_RowIndex;
-	
-					return {
-						row: row,
-						column: $.inArray( el, data[ row ].anCells )
-					};
+					return { // use a new object, in case someone changes the values
+						row:    el._DT_CellIndex.row,
+						column: el._DT_CellIndex.column
+	 				};
 				} )
 				.toArray();
-		} );
+	
+			if ( jqResult.length || ! s.nodeName ) {
+				return jqResult;
+			}
+	
+			// Otherwise the selector is a node, and there is one last option - the
+			// element might be a child of an element which has dt-row and dt-column
+			// data attributes
+			host = $(s).closest('*[data-dt-row]');
+			return host.length ?
+				[ {
+					row: host.data('dt-row'),
+					column: host.data('dt-column')
+				} ] :
+				[];
+		};
+	
+		return _selector_run( 'cell', selector, run, settings, opts );
 	};
 	
 	
@@ -10318,13 +10788,15 @@
 		// Argument shifting
 		if ( $.isPlainObject( rowSelector ) ) {
 			// Indexes
-			if ( typeof rowSelector.row !== undefined ) {
-				opts = columnSelector;
-				columnSelector = null;
-			}
-			else {
+			if ( rowSelector.row === undefined ) {
+				// Selector options in first parameter
 				opts = rowSelector;
 				rowSelector = null;
+			}
+			else {
+				// Cell index objects in first parameter
+				opts = columnSelector;
+				columnSelector = null;
 			}
 		}
 		if ( $.isPlainObject( columnSelector ) ) {
@@ -10371,9 +10843,10 @@
 	
 	_api_registerPlural( 'cells().nodes()', 'cell().node()', function () {
 		return this.iterator( 'cell', function ( settings, row, column ) {
-			var cells = settings.aoData[ row ].anCells;
-			return cells ?
-				cells[ column ] :
+			var data = settings.aoData[ row ];
+	
+			return data && data.anCells ?
+				data.anCells[ column ] :
 				undefined;
 		}, 1 );
 	} );
@@ -10514,6 +10987,24 @@
 	_api_register( 'order.listener()', function ( node, column, callback ) {
 		return this.iterator( 'table', function ( settings ) {
 			_fnSortAttachListener( settings, node, column, callback );
+		} );
+	} );
+	
+	
+	_api_register( 'order.fixed()', function ( set ) {
+		if ( ! set ) {
+			var ctx = this.context;
+			var fixed = ctx.length ?
+				ctx[0].aaSortingFixed :
+				undefined;
+	
+			return $.isArray( fixed ) ?
+				{ pre: fixed } :
+				fixed;
+		}
+	
+		return this.iterator( 'table', function ( settings ) {
+			settings.aaSortingFixed = $.extend( true, {}, set );
 		} );
 	} );
 	
@@ -10686,10 +11177,10 @@
 		var is = false;
 	
 		$.each( DataTable.settings, function (i, o) {
-			if ( o.nTable === t ||
-				$('table', o.nScrollHead)[0] === t ||
-				$('table', o.nScrollFoot)[0] === t
-			) {
+			var head = o.nScrollHead ? $('table', o.nScrollHead)[0] : null;
+			var foot = o.nScrollFoot ? $('table', o.nScrollFoot)[0] : null;
+	
+			if ( o.nTable === t || head === t || foot === t ) {
 				is = true;
 			}
 		} );
@@ -10716,11 +11207,22 @@
 	 */
 	DataTable.tables = DataTable.fnTables = function ( visible )
 	{
-		return $.map( DataTable.settings, function (o) {
+		var api = false;
+	
+		if ( $.isPlainObject( visible ) ) {
+			api = visible.api;
+			visible = visible.visible;
+		}
+	
+		var a = $.map( DataTable.settings, function (o) {
 			if ( !visible || (visible && $(o.nTable).is(':visible')) ) {
 				return o.nTable;
 			}
 		} );
+	
+		return api ?
+			new _Api( a ) :
+			a;
 	};
 	
 	
@@ -10817,6 +11319,12 @@
 	} );
 	
 	
+	_api_register( 'init()', function () {
+		var ctx = this.context;
+		return ctx.length ? ctx[0].oInit : null;
+	} );
+	
+	
 	_api_register( 'data()', function () {
 		return this.iterator( 'table', function ( settings ) {
 			return _pluck( settings.aoData, '_aData' );
@@ -10869,10 +11377,6 @@
 				jqTable.append( tfoot );
 			}
 	
-			// Remove the DataTables generated nodes, events and classes
-			jqTable.detach();
-			jqWrapper.detach();
-	
 			settings.aaSorting = [];
 			settings.aaSortingFixed = [];
 			_fnSortingClasses( settings );
@@ -10892,30 +11396,36 @@
 				} );
 			}
 	
-			if ( ! remove && orig ) {
-				// insertBefore acts like appendChild if !arg[1]
-				orig.insertBefore( table, settings.nTableReinsertBefore );
-			}
-	
 			// Add the TR elements back into the table in their original order
 			jqTbody.children().detach();
 			jqTbody.append( rows );
 	
-			// Restore the width of the original table - was read from the style property,
-			// so we can restore directly to that
-			jqTable
-				.css( 'width', settings.sDestroyWidth )
-				.removeClass( classes.sTable );
+			// Remove the DataTables generated nodes, events and classes
+			var removedMethod = remove ? 'remove' : 'detach';
+			jqTable[ removedMethod ]();
+			jqWrapper[ removedMethod ]();
 	
-			// If the were originally stripe classes - then we add them back here.
-			// Note this is not fool proof (for example if not all rows had stripe
-			// classes - but it's a good effort without getting carried away
-			ien = settings.asDestroyStripes.length;
+			// If we need to reattach the table to the document
+			if ( ! remove && orig ) {
+				// insertBefore acts like appendChild if !arg[1]
+				orig.insertBefore( table, settings.nTableReinsertBefore );
 	
-			if ( ien ) {
-				jqTbody.children().each( function (i) {
-					$(this).addClass( settings.asDestroyStripes[i % ien] );
-				} );
+				// Restore the width of the original table - was read from the style property,
+				// so we can restore directly to that
+				jqTable
+					.css( 'width', settings.sDestroyWidth )
+					.removeClass( classes.sTable );
+	
+				// If the were originally stripe classes - then we add them back here.
+				// Note this is not fool proof (for example if not all rows had stripe
+				// classes - but it's a good effort without getting carried away
+				ien = settings.asDestroyStripes.length;
+	
+				if ( ien ) {
+					jqTbody.children().each( function (i) {
+						$(this).addClass( settings.asDestroyStripes[i % ien] );
+					} );
+				}
 			}
 	
 			/* Remove the settings object from the settings array */
@@ -10926,6 +11436,55 @@
 		} );
 	} );
 	
+	
+	// Add the `every()` method for rows, columns and cells in a compact form
+	$.each( [ 'column', 'row', 'cell' ], function ( i, type ) {
+		_api_register( type+'s().every()', function ( fn ) {
+			var opts = this.selector.opts;
+			var api = this;
+	
+			return this.iterator( type, function ( settings, arg1, arg2, arg3, arg4 ) {
+				// Rows and columns:
+				//  arg1 - index
+				//  arg2 - table counter
+				//  arg3 - loop counter
+				//  arg4 - undefined
+				// Cells:
+				//  arg1 - row index
+				//  arg2 - column index
+				//  arg3 - table counter
+				//  arg4 - loop counter
+				fn.call(
+					api[ type ](
+						arg1,
+						type==='cell' ? arg2 : opts,
+						type==='cell' ? opts : undefined
+					),
+					arg1, arg2, arg3, arg4
+				);
+			} );
+		} );
+	} );
+	
+	
+	// i18n method for extensions to be able to use the language object from the
+	// DataTable
+	_api_register( 'i18n()', function ( token, def, plural ) {
+		var ctx = this.context[0];
+		var resolved = _fnGetObjectDataFn( token )( ctx.oLanguage );
+	
+		if ( resolved === undefined ) {
+			resolved = def;
+		}
+	
+		if ( plural !== undefined && $.isPlainObject( resolved ) ) {
+			resolved = resolved[ plural ] !== undefined ?
+				resolved[ plural ] :
+				resolved._;
+		}
+	
+		return resolved.replace( '%d', plural ); // nb: plural might be undefined,
+	} );
 
 	/**
 	 * Version string for plug-ins to check compatibility. Allowed format is
@@ -10935,7 +11494,7 @@
 	 *  @type string
 	 *  @default Version number
 	 */
-	DataTable.version = "1.10.5";
+	DataTable.version = "1.10.12-dev";
 
 	/**
 	 * Private data store, containing all of the settings objects that are
@@ -11087,7 +11646,16 @@
 		 *  @default null
 		 *  @private
 		 */
-		"src": null
+		"src": null,
+	
+		/**
+		 * Index in the aoData array. This saves an indexOf lookup when we have the
+		 * object, but want to know the index
+		 *  @type integer
+		 *  @default -1
+		 *  @private
+		 */
+		"idx": -1
 	};
 	
 	
@@ -13528,7 +14096,18 @@
 		 *  @name DataTable.defaults.renderer
 		 *
 		 */
-		"renderer": null
+		"renderer": null,
+	
+	
+		/**
+		 * Set the data property name that DataTables should use to get a row's id
+		 * to set as the `id` property in the node.
+		 *  @type string
+		 *  @default DT_RowId
+		 *
+		 *  @name DataTable.defaults.rowId
+		 */
+		"rowId": "DT_RowId"
 	};
 	
 	_fnHungarianMap( DataTable.defaults );
@@ -14627,7 +15206,21 @@
 			 *  @type boolean
 			 *  @default false
 			 */
-			"bScrollbarLeft": false
+			"bScrollbarLeft": false,
+	
+			/**
+			 * Flag for if `getBoundingClientRect` is fully supported or not
+			 *  @type boolean
+			 *  @default false
+			 */
+			"bBounding": false,
+	
+			/**
+			 * Browser scrollbar width
+			 *  @type integer
+			 *  @default 0
+			 */
+			"barWidth": 0
 		},
 	
 	
@@ -14671,6 +15264,13 @@
 		 *  @default []
 		 */
 		"aiDisplayMaster": [],
+	
+		/**
+		 * Map of row ids to data indexes
+		 *  @type object
+		 *  @default {}
+		 */
+		"aIds": {},
 	
 		/**
 		 * Store information about each column that is in use
@@ -15280,7 +15880,21 @@
 		 *  @type object
 		 *  @default {}
 		 */
-		"oPlugins": {}
+		"oPlugins": {},
+	
+		/**
+		 * Function used to get a row's id from the row's data
+		 *  @type function
+		 *  @default null
+		 */
+		"rowIdFn": null,
+	
+		/**
+		 * Data location where to store a row's id
+		 *  @type string
+		 *  @default null
+		 */
+		"rowId": null
 	};
 
 	/**
@@ -15327,6 +15941,14 @@
 		 *  @default {}
 		 */
 		classes: {},
+	
+	
+		/**
+		 * DataTables build type (expanded by the download builder)
+		 *
+		 *  @type string
+		 */
+		builder: "-source-",
 	
 	
 		/**
@@ -15440,6 +16062,37 @@
 		 *    );
 		 */
 		search: [],
+	
+	
+		/**
+		 * Selector extensions
+		 *
+		 * The `selector` option can be used to extend the options available for the
+		 * selector modifier options (`selector-modifier` object data type) that
+		 * each of the three built in selector types offer (row, column and cell +
+		 * their plural counterparts). For example the Select extension uses this
+		 * mechanism to provide an option to select only rows, columns and cells
+		 * that have been marked as selected by the end user (`{selected: true}`),
+		 * which can be used in conjunction with the existing built in selector
+		 * options.
+		 *
+		 * Each property is an array to which functions can be pushed. The functions
+		 * take three attributes:
+		 *
+		 * * Settings object for the host table
+		 * * Options object (`selector-modifier` object type)
+		 * * Array of selected item indexes
+		 *
+		 * The return is an array of the resulting item indexes after the custom
+		 * selector has been applied.
+		 *
+		 *  @type object
+		 */
+		selector: {
+			cell: [],
+			column: [],
+			row: []
+		},
 	
 	
 		/**
@@ -15935,7 +16588,7 @@
 			numbers.splice( 0, 0, 0 );
 		}
 		else {
-			numbers = _range( page-1, page+2 );
+			numbers = _range( page-half+2, page+half-1 );
 			numbers.push( 'ellipsis' );
 			numbers.push( pages-1 );
 			numbers.splice( 0, 0, 'ellipsis' );
@@ -15956,6 +16609,10 @@
 			return [  'first', 'previous', 'next', 'last' ];
 		},
 	
+		numbers: function ( page, pages ) {
+			return [ _numbers(page, pages) ];
+		},
+	
 		simple_numbers: function ( page, pages ) {
 			return [ 'previous', _numbers(page, pages), 'next' ];
 		},
@@ -15966,6 +16623,8 @@
 	
 		// For testing and plug-ins to use
 		_numbers: _numbers,
+	
+		// Number of number buttons (including ellipsis) to show. _Must be odd!_
 		numbers_length: 7
 	} );
 	
@@ -15975,6 +16634,7 @@
 			_: function ( settings, host, idx, buttons, page, pages ) {
 				var classes = settings.oClasses;
 				var lang = settings.oLanguage.oPaginate;
+				var aria = settings.oLanguage.oAria.paginate || {};
 				var btnDisplay, btnClass, counter=0;
 	
 				var attach = function( container, buttons ) {
@@ -15992,12 +16652,12 @@
 							attach( inner, button );
 						}
 						else {
-							btnDisplay = '';
+							btnDisplay = null;
 							btnClass = '';
 	
 							switch ( button ) {
 								case 'ellipsis':
-									container.append('<span>&hellip;</span>');
+									container.append('<span class="ellipsis">&#x2026;</span>');
 									break;
 	
 								case 'first':
@@ -16031,10 +16691,11 @@
 									break;
 							}
 	
-							if ( btnDisplay ) {
+							if ( btnDisplay !== null ) {
 								node = $('<a>', {
 										'class': classes.sPageButton+' '+btnClass,
 										'aria-controls': settings.sTableId,
+										'aria-label': aria[ button ],
 										'data-dt-idx': counter,
 										'tabindex': settings.iTabIndex,
 										'id': idx === 0 && typeof button === 'string' ?
@@ -16064,7 +16725,7 @@
 					// elements, focus is lost on the select button which is bad for
 					// accessibility. So we want to restore focus once the draw has
 					// completed
-					activeEl = $(document.activeElement).data('dt-idx');
+					activeEl = $(host).find(document.activeElement).data('dt-idx');
 				}
 				catch (e) {}
 	
@@ -16354,6 +17015,12 @@
 	 * to make working with DataTables a little bit easier.
 	 */
 	
+	var __htmlEscapeEntities = function ( d ) {
+		return typeof d === 'string' ?
+			d.replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;') :
+			d;
+	};
+	
 	/**
 	 * Helpers for `columns.render`.
 	 *
@@ -16362,11 +17029,14 @@
 	 *
 	 * * `number` - Will format numeric data (defined by `columns.data`) for
 	 *   display, retaining the original unformatted data for sorting and filtering.
-	 *   It takes 4 parameters:
+	 *   It takes 5 parameters:
 	 *   * `string` - Thousands grouping separator
 	 *   * `string` - Decimal point indicator
 	 *   * `integer` - Number of decimal points to show
 	 *   * `string` (optional) - Prefix.
+	 *   * `string` (optional) - Postfix (/suffix).
+	 * * `text` - Escape HTML to help prevent XSS attacks. It has no optional
+	 *   parameters.
 	 *
 	 * @example
 	 *   // Column definition using the number renderer
@@ -16378,11 +17048,24 @@
 	 * @namespace
 	 */
 	DataTable.render = {
-		number: function ( thousands, decimal, precision, prefix ) {
+		number: function ( thousands, decimal, precision, prefix, postfix ) {
 			return {
 				display: function ( d ) {
+					if ( typeof d !== 'number' && typeof d !== 'string' ) {
+						return d;
+					}
+	
 					var negative = d < 0 ? '-' : '';
-					d = Math.abs( parseFloat( d ) );
+					var flo = parseFloat( d );
+	
+					// If NaN then there isn't much formatting that we can do - just
+					// return immediately, escaping any HTML (this was supposed to
+					// be a number after all)
+					if ( isNaN( flo ) ) {
+						return __htmlEscapeEntities( d );
+					}
+	
+					d = Math.abs( flo );
 	
 					var intPart = parseInt( d, 10 );
 					var floatPart = precision ?
@@ -16393,8 +17076,15 @@
 						intPart.toString().replace(
 							/\B(?=(\d{3})+(?!\d))/g, thousands
 						) +
-						floatPart;
+						floatPart +
+						(postfix||'');
 				}
+			};
+		},
+	
+		text: function () {
+			return {
+				display: __htmlEscapeEntities
 			};
 		}
 	};
@@ -16497,11 +17187,9 @@
 		_fnCalculateColumnWidths: _fnCalculateColumnWidths,
 		_fnThrottle: _fnThrottle,
 		_fnConvertToWidth: _fnConvertToWidth,
-		_fnScrollingWidthAdjust: _fnScrollingWidthAdjust,
 		_fnGetWidestNode: _fnGetWidestNode,
 		_fnGetMaxLenString: _fnGetMaxLenString,
 		_fnStringToCss: _fnStringToCss,
-		_fnScrollBarWidth: _fnScrollBarWidth,
 		_fnSortFlatten: _fnSortFlatten,
 		_fnSort: _fnSort,
 		_fnSortAria: _fnSortAria,
@@ -16529,6 +17217,9 @@
 
 	// jQuery access
 	$.fn.dataTable = DataTable;
+
+	// Provide access to the host jQuery object (circular reference)
+	DataTable.$ = $;
 
 	// Legacy aliases
 	$.fn.dataTableSettings = DataTable.settings;
@@ -16712,11 +17403,8 @@
 	return $.fn.dataTable;
 }));
 
-}(window, document));
-
-
 /*! DataTables Bootstrap 3 integration
- * ©2011-2014 SpryMedia Ltd - datatables.net/license
+ * ©2011-2015 SpryMedia Ltd - datatables.net/license
  */
 
 /**
@@ -16727,10 +17415,37 @@
  * controls using Bootstrap. See http://datatables.net/manual/styling/bootstrap
  * for further information.
  */
-(function(window, document, undefined){
+(function( factory ){
+	if ( typeof define === 'function' && define.amd ) {
+		// AMD
+		define( ['jquery', 'datatables.net'], function ( $ ) {
+			return factory( $, window, document );
+		} );
+	}
+	else if ( typeof exports === 'object' ) {
+		// CommonJS
+		module.exports = function (root, $) {
+			if ( ! root ) {
+				root = window;
+			}
 
-var factory = function( $, DataTable ) {
-"use strict";
+			if ( ! $ || ! $.fn.dataTable ) {
+				// Require DataTables, which attaches to jQuery, including
+				// jQuery if needed and have a $ property so we can access the
+				// jQuery object that is used
+				$ = require('datatables.net')(root, $).$;
+			}
+
+			return factory( $, root, root.document );
+		};
+	}
+	else {
+		// Browser
+		factory( jQuery, window, document );
+	}
+}(function( $, window, document, undefined ) {
+'use strict';
+var DataTable = $.fn.dataTable;
 
 
 /* Set the defaults for DataTables initialisation */
@@ -16738,7 +17453,7 @@ $.extend( true, DataTable.defaults, {
 	dom:
 		"<'row'<'col-sm-6'l><'col-sm-6'f>>" +
 		"<'row'<'col-sm-12'tr>>" +
-		"<'row'<'col-sm-6'i><'col-sm-6'p>>",
+		"<'row'<'col-sm-5'i><'col-sm-7'p>>",
 	renderer: 'bootstrap'
 } );
 
@@ -16747,7 +17462,8 @@ $.extend( true, DataTable.defaults, {
 $.extend( DataTable.ext.classes, {
 	sWrapper:      "dataTables_wrapper form-inline dt-bootstrap",
 	sFilterInput:  "form-control input-sm",
-	sLengthSelect: "form-control input-sm"
+	sLengthSelect: "form-control input-sm",
+	sProcessing:   "dataTables_processing panel panel-default"
 } );
 
 
@@ -16756,14 +17472,15 @@ DataTable.ext.renderer.pageButton.bootstrap = function ( settings, host, idx, bu
 	var api     = new DataTable.Api( settings );
 	var classes = settings.oClasses;
 	var lang    = settings.oLanguage.oPaginate;
-	var btnDisplay, btnClass;
+	var aria = settings.oLanguage.oAria.paginate || {};
+	var btnDisplay, btnClass, counter=0;
 
 	var attach = function( container, buttons ) {
 		var i, ien, node, button;
 		var clickHandler = function ( e ) {
 			e.preventDefault();
-			if ( !$(e.currentTarget).hasClass('disabled') ) {
-				api.page( e.data.action ).draw( false );
+			if ( !$(e.currentTarget).hasClass('disabled') && api.page() != e.data.action ) {
+				api.page( e.data.action ).draw( 'page' );
 			}
 		};
 
@@ -16779,7 +17496,7 @@ DataTable.ext.renderer.pageButton.bootstrap = function ( settings, host, idx, bu
 
 				switch ( button ) {
 					case 'ellipsis':
-						btnDisplay = '&hellip;';
+						btnDisplay = '&#x2026;';
 						btnClass = 'disabled';
 						break;
 
@@ -16817,14 +17534,16 @@ DataTable.ext.renderer.pageButton.bootstrap = function ( settings, host, idx, bu
 				if ( btnDisplay ) {
 					node = $('<li>', {
 							'class': classes.sPageButton+' '+btnClass,
-							'aria-controls': settings.sTableId,
-							'tabindex': settings.iTabIndex,
 							'id': idx === 0 && typeof button === 'string' ?
 								settings.sTableId +'_'+ button :
 								null
 						} )
 						.append( $('<a>', {
-								'href': '#'
+								'href': '#',
+								'aria-controls': settings.sTableId,
+								'aria-label': aria[ button ],
+								'data-dt-idx': counter,
+								'tabindex': settings.iTabIndex
 							} )
 							.html( btnDisplay )
 						)
@@ -16833,550 +17552,646 @@ DataTable.ext.renderer.pageButton.bootstrap = function ( settings, host, idx, bu
 					settings.oApi._fnBindAction(
 						node, {action: button}, clickHandler
 					);
+
+					counter++;
 				}
 			}
 		}
 	};
 
+	// IE9 throws an 'unknown error' if document.activeElement is used
+	// inside an iframe or frame. 
+	var activeEl;
+
+	try {
+		// Because this approach is destroying and recreating the paging
+		// elements, focus is lost on the select button which is bad for
+		// accessibility. So we want to restore focus once the draw has
+		// completed
+		activeEl = $(host).find(document.activeElement).data('dt-idx');
+	}
+	catch (e) {}
+
 	attach(
 		$(host).empty().html('<ul class="pagination"/>').children('ul'),
 		buttons
 	);
+
+	if ( activeEl ) {
+		$(host).find( '[data-dt-idx='+activeEl+']' ).focus();
+	}
 };
 
 
-/*
- * TableTools Bootstrap compatibility
- * Required TableTools 2.1+
- */
-if ( DataTable.TableTools ) {
-	// Set the classes that TableTools uses to something suitable for Bootstrap
-	$.extend( true, DataTable.TableTools.classes, {
-		"container": "DTTT btn-group",
-		"buttons": {
-			"normal": "btn btn-default",
-			"disabled": "disabled"
-		},
-		"collection": {
-			"container": "DTTT_dropdown dropdown-menu",
-			"buttons": {
-				"normal": "",
-				"disabled": "disabled"
-			}
-		},
-		"print": {
-			"info": "DTTT_print_info"
-		},
-		"select": {
-			"row": "active"
-		}
-	} );
-
-	// Have the collection use a bootstrap compatible drop down
-	$.extend( true, DataTable.TableTools.DEFAULTS.oTags, {
-		"collection": {
-			"container": "ul",
-			"button": "li",
-			"liner": "a"
-		}
-	} );
-}
-
-}; // /factory
-
-
-// Define as an AMD module if possible
-if ( typeof define === 'function' && define.amd ) {
-	define( ['jquery', 'datatables'], factory );
-}
-else if ( typeof exports === 'object' ) {
-    // Node/CommonJS
-    factory( require('jquery'), require('datatables') );
-}
-else if ( jQuery ) {
-	// Otherwise simply initialise as normal, stopping multiple evaluation
-	factory( jQuery, jQuery.fn.dataTable );
-}
-
-
-})(window, document);
-
-
+return DataTable;
+}));
 /*!
  * @copyright Copyright &copy; Kartik Visweswaran, Krajee.com, 2014 - 2015
- * @version 4.1.8
+ * @version 4.3.1
  *
- * File input styled for Bootstrap 3.0 that utilizes HTML5 File Input's advanced 
- * features including the FileReader API. 
- * 
- * The plugin drastically enhances the HTML file input to preview multiple files on the client before
- * upload. In addition it provides the ability to preview content of images, text, videos, audio, html, 
- * flash and other objects. It also offers the ability to upload and delete files using AJAX, and add 
- * files in batches (i.e. preview, append, or remove before upload).
- * 
+ * File input styled for Bootstrap 3.0 that utilizes HTML5 File Input's advanced features including the FileReader API.
+ *
+ * The plugin drastically enhances the HTML file input to preview multiple files on the client before upload. In
+ * addition it provides the ability to preview content of images, text, videos, audio, html, flash and other objects.
+ * It also offers the ability to upload and delete files using AJAX, and add files in batches (i.e. preview, append,
+ * or remove before upload).
+ *
  * Author: Kartik Visweswaran
  * Copyright: 2015, Kartik Visweswaran, Krajee.com
  * For more JQuery plugins visit http://plugins.krajee.com
  * For more Yii related demos visit http://demos.krajee.com
  */
-(function ($) {
+(function (factory) {
     "use strict";
-    String.prototype.repl = function (from, to) {
-        return this.split(from).join(to);
+    if (typeof define === 'function' && define.amd) { // jshint ignore:line
+        // AMD. Register as an anonymous module.
+        define(['jquery'], factory); // jshint ignore:line
+    } else { // noinspection JSUnresolvedVariable
+        if (typeof module === 'object' && module.exports) { // jshint ignore:line
+            // Node/CommonJS
+            // noinspection JSUnresolvedVariable
+            module.exports = factory(require('jquery')); // jshint ignore:line
+        } else {
+            // Browser globals
+            factory(window.jQuery);
+        }
+    }
+}(function ($) {
+    "use strict";
+
+    $.fn.fileinputLocales = {};
+
+    var NAMESPACE, objUrl, compare, isIE, isEdge, handler, previewCache, getNum, hasFileAPISupport, hasDragDropSupport,
+        hasFileUploadSupport, addCss, STYLE_SETTING, OBJECT_PARAMS, DEFAULT_PREVIEW, defaultFileActionSettings, tMain1,
+        tMain2, tPreview, tIcon, tClose, tCaption, tBtnDefault, tBtnLink, tBtnBrowse, tModal, tProgress, tFooter,
+        tActions, tActionDelete, tActionUpload, tZoom, tGeneric, tHtml, tImage, tText, tVideo, tAudio, tFlash, tObject,
+        tOther, defaultLayoutTemplates, defaultPreviewTemplates, defaultPreviewTypes, defaultPreviewSettings, FileInput,
+        defaultFileTypeSettings, isEmpty, isArray, isSet, getElement, uniqId, htmlEncode, replaceTags, cleanMemory;
+
+    NAMESPACE = '.fileinput';
+    //noinspection JSUnresolvedVariable
+    objUrl = window.URL || window.webkitURL;
+    compare = function (input, str, exact) {
+        return input !== undefined && (exact ? input === str : input.match(str));
     };
-    var isIE = function (ver) {
-            var div = document.createElement("div"), status;
-            div.innerHTML = "<!--[if IE " + ver + "]><i></i><![endif]-->";
-            status = (div.getElementsByTagName("i").length === 1);
-            document.body.appendChild(div);
-            div.parentNode.removeChild(div);
-            return status;
-        },
-        previewCache = {
-            data: {},
-            init: function (obj) {
-                var content = obj.initialPreview, id = obj.id;
-                if (content.length > 0 && !isArray(content)) {
-                    content = content.split(obj.initialPreviewDelimiter);
-                }
-                previewCache.data[id] = {
-                    content: content,
-                    config: obj.initialPreviewConfig,
-                    tags: obj.initialPreviewThumbTags,
-                    delimiter: obj.initialPreviewDelimiter,
-                    template: obj.previewGenericTemplate,
-                    msg: obj.msgSelected,
-                    initId: obj.previewInitId,
-                    footer: obj.getLayoutTemplate('footer'),
-                    isDelete: obj.initialPreviewShowDelete,
-                    caption: obj.initialCaption,
-                    actions: function (showUpload, showDelete, disabled, url, key, index) {
-                        return obj.renderFileActions(showUpload, showDelete, disabled, url, key, index);
-                    }
-                };
-            },
-            fetch: function (id) {
-                return previewCache.data[id].content.filter(function (n) {
-                    return n !== undefined;
-                });
-            },
-            count: function (id) {
-                return !!previewCache.data[id] && !!previewCache.data[id].content ? previewCache.fetch(id).length : 0;
-            },
-            get: function (id, i, isDisabled) {
-                var ind = 'init_' + i, data = previewCache.data[id],
-                    previewId = data.initId + '-' + ind, out;
-                isDisabled = isDisabled === undefined ? true : isDisabled;
-                if (data.content[i] === undefined) {
-                    return '';
-                }
-                out = data.template
-                    .repl('{previewId}', previewId)
-                    .repl('{frameClass}', ' file-preview-initial')
-                    .repl('{fileindex}', ind)
-                    .repl('{content}', data.content[i])
-                    .repl('{footer}', previewCache.footer(id, i, isDisabled));
-                if (data.tags.length && data.tags[i]) {
-                    out = replaceTags(out, data.tags[i]);
-                }
-                return out;
-            },
-            add: function (id, content, config, append) {
-                var data = $.extend(true, {}, previewCache.data[id]), index;
-                if (!isArray(content)) {
-                    content = content.split(data.delimiter);
-                }
-                if (append) {
-                    index = data.content.push(content) - 1;
-                    data.config[index] = config;
-                } else {
-                    index = content.length;
-                    data.content = content;
-                    data.config = config;
-                }
-                previewCache.data[id] = data;
-                return index;
-            },
-            set: function (id, content, config, tags, append) {
-                var data = $.extend(true, {}, previewCache.data[id]), i;
-                if (!isArray(content)) {
-                    content = content.split(data.delimiter);
-                }
-                if (append) {
-                    for (i = 0; i < content.length; i++) {
-                        data.content.push(content[i]);
-                    }
-                    for (i = 0; i < config.length; i++) {
-                        data.config.push(config[i]);
-                    }
-                    for (i = 0; i < tags.length; i++) {
-                        data.tags.push(tags[i]);
-                    }
-                } else {
-                    data.content = content;
-                    data.config = config;
-                    data.tags = tags;
-                }
-                previewCache.data[id] = data;
-            },
-            unset: function (id, index) {
-                var chk = previewCache.count(id);
-                if (!chk) {
-                    return;
-                }
-                if (chk === 1) {
-                    previewCache.data[id].content = [];
-                    previewCache.data[id].config = [];
-                    return;
-                }
-                previewCache.data[id].content[index] = undefined;
-                previewCache.data[id].config[index] = undefined;
-            },
-            out: function (id) {
-                var html = '', data = previewCache.data[id], caption, len = previewCache.count(id);
-                if (len === 0) {
-                    return {content: '', caption: ''};
-                }
-                for (var i = 0; i < len; i++) {
-                    html += previewCache.get(id, i);
-                }
-                caption = data.msg.repl('{n}', len);
-                return {content: html, caption: caption};
-            },
-            footer: function (id, i, isDisabled) {
-                var data = previewCache.data[id];
-                isDisabled = isDisabled === undefined ? true : isDisabled;
-                if (data.config.length === 0 || isEmpty(data.config[i])) {
-                    return '';
-                }
-                var config = data.config[i],
-                    caption = isSet('caption', config) ? config.caption : '',
-                    width = isSet('width', config) ? config.width : 'auto',
-                    url = isSet('url', config) ? config.url : false,
-                    key = isSet('key', config) ? config.key : null,
-                    disabled = (url === false) && isDisabled,
-                    actions = data.isDelete ? data.actions(false, true, disabled, url, key, i) : '',
-                    footer = data.footer.repl('{actions}', actions);
-                return footer
-                    .repl('{caption}', caption)
-                    .repl('{width}', width)
-                    .repl('{indicator}', '')
-                    .repl('{indicatorTitle}', '');
+    isIE = function (ver) {
+        // check for IE versions < 11
+        if (navigator.appName !== 'Microsoft Internet Explorer') {
+            return false;
+        }
+        if (ver === 10) {
+            return new RegExp('msie\\s' + ver, 'i').test(navigator.userAgent);
+        }
+        var div = document.createElement("div"), status;
+        div.innerHTML = "<!--[if IE " + ver + "]> <i></i> <![endif]-->";
+        status = div.getElementsByTagName("i").length;
+        document.body.appendChild(div);
+        div.parentNode.removeChild(div);
+        return status;
+    };
+    isEdge = function () {
+        return new RegExp('Edge\/[0-9]+', 'i').test(navigator.userAgent);
+    };
+    handler = function ($el, event, callback, skipNS) {
+        var ev = skipNS ? event : event.split(' ').join(NAMESPACE + ' ') + NAMESPACE;
+        $el.off(ev).on(ev, callback);
+    };
+    previewCache = {
+        data: {},
+        init: function (obj) {
+            var content = obj.initialPreview, id = obj.id;
+            if (content.length > 0 && !isArray(content)) {
+                content = content.split(obj.initialPreviewDelimiter);
             }
-        },
-        PREVIEW_FRAMES = '.file-preview-frame:not(.file-preview-initial)',
-        getNum = function (num, def) {
-            def = def || 0;
-            if (typeof num === "number") {
-                return num;
-            }
-            if (typeof num === "string") {
-                num = parseFloat(num);
-            }
-            return isNaN(num) ? def : num;
-        },
-        hasFileAPISupport = function () {
-            return window.File && window.FileReader;
-        },
-        hasDragDropSupport = function () {
-            var $div = document.createElement('div');
-            return !isIE(9) && ($div.draggable !== undefined || ($div.ondragstart !== undefined && $div.ondrop !== undefined));
-        },
-        hasFileUploadSupport = function () {
-            return hasFileAPISupport && window.FormData;
-        },
-        addCss = function ($el, css) {
-            $el.removeClass(css).addClass(css);
-        },
-        STYLE_SETTING = 'style="width:{width};height:{height};"',
-        OBJECT_PARAMS = '      <param name="controller" value="true" />\n' +
-            '      <param name="allowFullScreen" value="true" />\n' +
-            '      <param name="allowScriptAccess" value="always" />\n' +
-            '      <param name="autoPlay" value="false" />\n' +
-            '      <param name="autoStart" value="false" />\n' +
-            '      <param name="quality" value="high" />\n',
-        DEFAULT_PREVIEW = '<div class="file-preview-other">\n' +
-            '       {previewFileIcon}\n' +
-            '   </div>',
-        defaultFileActionSettings = {
-            removeIcon: '<i class="glyphicon glyphicon-trash text-danger"></i>',
-            removeClass: 'btn btn-xs btn-default',
-            removeTitle: 'Remove file',
-            uploadIcon: '<i class="glyphicon glyphicon-upload text-info"></i>',
-            uploadClass: 'btn btn-xs btn-default',
-            uploadTitle: 'Upload file',
-            indicatorNew: '<i class="glyphicon glyphicon-hand-down text-warning"></i>',
-            indicatorSuccess: '<i class="glyphicon glyphicon-ok-sign file-icon-large text-success"></i>',
-            indicatorError: '<i class="glyphicon glyphicon-exclamation-sign text-danger"></i>',
-            indicatorLoading: '<i class="glyphicon glyphicon-hand-up text-muted"></i>',
-            indicatorNewTitle: 'Not uploaded yet',
-            indicatorSuccessTitle: 'Uploaded',
-            indicatorErrorTitle: 'Upload Error',
-            indicatorLoadingTitle: 'Uploading ...'
-        },
-        tMain1 = '{preview}\n' +
-            '<div class="kv-upload-progress hide"></div>\n' +
-            '<div class="input-group {class}">\n' +
-            '   {caption}\n' +
-            '   <div class="input-group-btn">\n' +
-            '       {remove}\n' +
-            '       {cancel}\n' +
-            '       {upload}\n' +
-            '       {browse}\n' +
-            '   </div>\n' +
-            '</div>',
-        tMain2 = '{preview}\n<div class="kv-upload-progress hide"></div>\n{remove}\n{cancel}\n{upload}\n{browse}\n',
-        tPreview = '<div class="file-preview {class}">\n' +
-            '    <div class="close fileinput-remove">&times;</div>\n' +
-            '    <div class="{dropClass}">\n' +
-            '    <div class="file-preview-thumbnails">\n' +
-            '    </div>\n' +
-            '    <div class="clearfix"></div>' +
-            '    <div class="file-preview-status text-center text-success"></div>\n' +
-            '    <div class="kv-fileinput-error"></div>\n' +
-            '    </div>\n' +
-            '</div>',
-        tIcon = '<span class="glyphicon glyphicon-file kv-caption-icon"></span>',
-        tCaption = '<div tabindex="-1" class="form-control file-caption {class}">\n' +
-            '   <span class="file-caption-ellipsis">&hellip;</span>\n' +
-            '   <div class="file-caption-name"></div>\n' +
-            '</div>',
-        tModal = '<div id="{id}" class="modal fade">\n' +
-            '  <div class="modal-dialog modal-lg">\n' +
-            '    <div class="modal-content">\n' +
-            '      <div class="modal-header">\n' +
-            '        <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>\n' +
-            '        <h3 class="modal-title">Detailed Preview <small>{title}</small></h3>\n' +
-            '      </div>\n' +
-            '      <div class="modal-body">\n' +
-            '        <textarea class="form-control" style="font-family:Monaco,Consolas,monospace; height: {height}px;" readonly>{body}</textarea>\n' +
-            '      </div>\n' +
-            '    </div>\n' +
-            '  </div>\n' +
-            '</div>',
-        tProgress = '<div class="progress">\n' +
-            '    <div class="{class}" role="progressbar"' +
-            ' aria-valuenow="{percent}" aria-valuemin="0" aria-valuemax="100" style="width:{percent}%;">\n' +
-            '        {percent}%\n' +
-            '     </div>\n' +
-            '</div>',
-        tFooter = '<div class="file-thumbnail-footer">\n' +
-            '    <div class="file-caption-name">{caption}</div>\n' +
-            '    {actions}\n' +
-            '</div>',
-        tActions = '<div class="file-actions">\n' +
-            '    <div class="file-footer-buttons">\n' +
-            '        {upload}{delete}{other}' +
-            '    </div>\n' +
-            '    <div class="file-upload-indicator" tabindex="-1" title="{indicatorTitle}">{indicator}</div>\n' +
-            '    <div class="clearfix"></div>\n' +
-            '</div>',
-        tActionDelete = '<button type="button" class="kv-file-remove {removeClass}" ' +
-            'title="{removeTitle}"{dataUrl}{dataKey}>{removeIcon}</button>\n',
-        tActionUpload = '<button type="button" class="kv-file-upload {uploadClass}" title="{uploadTitle}">' +
-            '   {uploadIcon}\n</button>\n',
-        tGeneric = '<div class="file-preview-frame{frameClass}" id="{previewId}" data-fileindex="{fileindex}">\n' +
-            '   {content}\n' +
-            '   {footer}\n' +
-            '</div>\n',
-        tHtml = '<div class="file-preview-frame{frameClass}" id="{previewId}" data-fileindex="{fileindex}">\n' +
-            '    <object data="{data}" type="{type}" width="{width}" height="{height}">\n' +
-            '       ' + DEFAULT_PREVIEW + '\n' +
-            '    </object>\n' +
-            '   {footer}\n' +
-            '</div>',
-        tImage = '<div class="file-preview-frame{frameClass}" id="{previewId}" data-fileindex="{fileindex}">\n' +
-            '   <img src="{data}" class="file-preview-image" title="{caption}" alt="{caption}" ' + STYLE_SETTING + '>\n' +
-            '   {footer}\n' +
-            '</div>\n',
-        tText = '<div class="file-preview-frame{frameClass}" id="{previewId}" data-fileindex="{fileindex}">\n' +
-            '   <div class="file-preview-text" title="{caption}" ' + STYLE_SETTING + '>\n' +
-            '       {data}\n' +
-            '   </div>\n' +
-            '   {footer}\n' +
-            '</div>',
-        tVideo = '<div class="file-preview-frame{frameClass}" id="{previewId}" data-fileindex="{fileindex}"' +
-            ' title="{caption}" ' + STYLE_SETTING + '>\n' +
-            '   <video width="{width}" height="{height}" controls>\n' +
-            '       <source src="{data}" type="{type}">\n' +
-            '       ' + DEFAULT_PREVIEW + '\n' +
-            '   </video>\n' +
-            '   {footer}\n' +
-            '</div>\n',
-        tAudio = '<div class="file-preview-frame{frameClass}" id="{previewId}" data-fileindex="{fileindex}"' +
-            ' title="{caption}" ' + STYLE_SETTING + '>\n' +
-            '   <audio controls>\n' +
-            '       <source src="' + '{data}' + '" type="{type}">\n' +
-            '       ' + DEFAULT_PREVIEW + '\n' +
-            '   </audio>\n' +
-            '   {footer}\n' +
-            '</div>',
-        tFlash = '<div class="file-preview-frame{frameClass}" id="{previewId}" data-fileindex="{fileindex}"' +
-            ' title="{caption}" ' + STYLE_SETTING + '>\n' +
-            '   <object type="application/x-shockwave-flash" width="{width}" height="{height}" data="{data}">\n' +
-            OBJECT_PARAMS + '       ' + DEFAULT_PREVIEW + '\n' +
-            '   </object>\n' +
-            '   {footer}\n' +
-            '</div>\n',
-        tObject = '<div class="file-preview-frame{frameClass}" id="{previewId}" data-fileindex="{fileindex}"' +
-            ' title="{caption}" ' + STYLE_SETTING + '>\n' +
-            '   <object data="{data}" type="{type}" width="{width}" height="{height}">\n' +
-            '       <param name="movie" value="{caption}" />\n' +
-            OBJECT_PARAMS + '         ' + DEFAULT_PREVIEW + '\n' +
-            '   </object>\n' +
-            '   {footer}\n' +
-            '</div>',
-        tOther = '<div class="file-preview-frame{frameClass}" id="{previewId}" data-fileindex="{fileindex}"' +
-            ' title="{caption}" ' + STYLE_SETTING + '>\n' +
-            '   ' + DEFAULT_PREVIEW + '\n' +
-            '   {footer}\n' +
-            '</div>',
-        defaultLayoutTemplates = {
-            main1: tMain1,
-            main2: tMain2,
-            preview: tPreview,
-            icon: tIcon,
-            caption: tCaption,
-            modal: tModal,
-            progress: tProgress,
-            footer: tFooter,
-            actions: tActions,
-            actionDelete: tActionDelete,
-            actionUpload: tActionUpload
-        },
-        defaultPreviewTemplates = {
-            generic: tGeneric,
-            html: tHtml,
-            image: tImage,
-            text: tText,
-            video: tVideo,
-            audio: tAudio,
-            flash: tFlash,
-            object: tObject,
-            other: tOther
-        },
-        defaultPreviewTypes = ['image', 'html', 'text', 'video', 'audio', 'flash', 'object'],
-        defaultPreviewSettings = {
-            image: {width: "auto", height: "160px"},
-            html: {width: "213px", height: "160px"},
-            text: {width: "160px", height: "160px"},
-            video: {width: "213px", height: "160px"},
-            audio: {width: "213px", height: "80px"},
-            flash: {width: "213px", height: "160px"},
-            object: {width: "160px", height: "160px"},
-            other: {width: "160px", height: "160px"}
-        },
-        defaultFileTypeSettings = {
-            image: function (vType, vName) {
-                return (vType !== undefined) ? vType.match('image.*') : vName.match(/\.(gif|png|jpe?g)$/i);
-            },
-            html: function (vType, vName) {
-                return (vType !== undefined) ? vType === 'text/html' : vName.match(/\.(htm|html)$/i);
-            },
-            text: function (vType, vName) {
-                return (vType !== undefined && vType.match('text.*')) || vName.match(/\.(txt|md|csv|nfo|php|ini)$/i);
-            },
-            video: function (vType, vName) {
-                return (vType !== undefined && vType.match(/\.video\/(ogg|mp4|webm)$/i)) || vName.match(/\.(og?|mp4|webm)$/i);
-            },
-            audio: function (vType, vName) {
-                return (vType !== undefined && vType.match(/\.audio\/(ogg|mp3|wav)$/i)) || vName.match(/\.(ogg|mp3|wav)$/i);
-            },
-            flash: function (vType, vName) {
-                return (vType !== undefined && vType === 'application/x-shockwave-flash') || vName.match(/\.(swf)$/i);
-            },
-            object: function () {
-                return true;
-            },
-            other: function () {
-                return true;
-            }
-        },
-        isEmpty = function (value, trim) {
-            return value === null || value === undefined || value.length === 0 || (trim && $.trim(value) === '');
-        },
-        isArray = function (a) {
-            return Array.isArray(a) || Object.prototype.toString.call(a) === '[object Array]';
-        },
-        isSet = function (needle, haystack) {
-            return (typeof haystack === 'object' && needle in haystack);
-        },
-        getElement = function (options, param, value) {
-            return (isEmpty(options) || isEmpty(options[param])) ? value : $(options[param]);
-        },
-        uniqId = function () {
-            return Math.round(new Date().getTime() + (Math.random() * 100));
-        },
-        htmlEncode = function (str) {
-            return String(str).repl('&', '&amp;')
-                .repl('"', '&quot;')
-                .repl("'", '&#39;')
-                .repl('<', '&lt;')
-                .repl('>', '&gt;');
-        },
-        replaceTags = function (str, tags) {
-            var out = str;
-            tags = tags || {};
-            $.each(tags, function (key, value) {
-                if (typeof value === "function") {
-                    value = value();
+            previewCache.data[id] = {
+                content: content,
+                config: obj.initialPreviewConfig,
+                tags: obj.initialPreviewThumbTags,
+                delimiter: obj.initialPreviewDelimiter,
+                template: obj.previewGenericTemplate,
+                msg: function (n) {
+                    return obj._getMsgSelected(n);
+                },
+                initId: obj.previewInitId,
+                footer: obj._getLayoutTemplate('footer').replace(/\{progress}/g, obj._renderThumbProgress()),
+                isDelete: obj.initialPreviewShowDelete,
+                caption: obj.initialCaption,
+                actions: function (showUpload, showDelete, disabled, url, key) {
+                    return obj._renderFileActions(showUpload, showDelete, disabled, url, key);
                 }
-                out = out.repl(key, value);
+            };
+        },
+        fetch: function (id) {
+            return previewCache.data[id].content.filter(function (n) {
+                return n !== null;
             });
+        },
+        count: function (id, all) {
+            return !!previewCache.data[id] && !!previewCache.data[id].content ?
+                (all ? previewCache.data[id].content.length : previewCache.fetch(id).length) : 0;
+        },
+        get: function (id, i, isDisabled) {
+            var ind = 'init_' + i, data = previewCache.data[id], config = data.config[i],
+                previewId = data.initId + '-' + ind, out, $tmp, frameClass = ' file-preview-initial';
+            /** @namespace config.frameClass */
+            /** @namespace config.frameAttr */
+            isDisabled = isDisabled === undefined ? true : isDisabled;
+            if (data.content[i] === null) {
+                return '';
+            }
+            if (!isEmpty(config) && !isEmpty(config.frameClass)) {
+                frameClass += ' ' + config.frameClass;
+            }
+            out = data.template
+                .replace(/\{previewId}/g, previewId)
+                .replace(/\{frameClass}/g, frameClass)
+                .replace(/\{fileindex}/g, ind)
+                .replace(/\{content}/g, data.content[i])
+                .replace(/\{footer}/g, previewCache.footer(id, i, isDisabled));
+            if (data.tags.length && data.tags[i]) {
+                out = replaceTags(out, data.tags[i]);
+            }
+            if (!isEmpty(config) && !isEmpty(config.frameAttr)) {
+                $tmp = $(document.createElement('div')).html(out);
+                $tmp.find('.file-preview-initial').attr(config.frameAttr);
+                out = $tmp.html();
+                $tmp.remove();
+            }
             return out;
         },
-        objUrl = window.URL || window.webkitURL,
-        FileInput = function (element, options) {
-            this.$element = $(element);
-            if (hasFileAPISupport() || isIE(9)) {
-                this.init(options);
-                this.listen();
-            } else {
-                this.$element.removeClass('file-loading');
+        add: function (id, content, config, tags, append) {
+            var data = $.extend(true, {}, previewCache.data[id]), index;
+            if (!isArray(content)) {
+                content = content.split(data.delimiter);
             }
-        };
+            if (append) {
+                index = data.content.push(content) - 1;
+                data.config[index] = config;
+                data.tags[index] = tags;
+            } else {
+                index = content.length;
+                data.content = content;
+                data.config = config;
+                data.tags = tags;
+            }
+            previewCache.data[id] = data;
+            return index;
+        },
+        set: function (id, content, config, tags, append) {
+            var data = $.extend(true, {}, previewCache.data[id]), i, chk;
+            if (!content || !content.length) {
+                return;
+            }
+            if (!isArray(content)) {
+                content = content.split(data.delimiter);
+            }
+            chk = content.filter(function (n) {
+                return n !== null;
+            });
+            if (!chk.length) {
+                return;
+            }
+            if (data.content === undefined) {
+                data.content = [];
+            }
+            if (data.config === undefined) {
+                data.config = [];
+            }
+            if (data.tags === undefined) {
+                data.tags = [];
+            }
+            if (append) {
+                for (i = 0; i < content.length; i++) {
+                    if (content[i]) {
+                        data.content.push(content[i]);
+                    }
+                }
+                for (i = 0; i < config.length; i++) {
+                    if (config[i]) {
+                        data.config.push(config[i]);
+                    }
+                }
+                for (i = 0; i < tags.length; i++) {
+                    if (tags[i]) {
+                        data.tags.push(tags[i]);
+                    }
+                }
+            } else {
+                data.content = content;
+                data.config = config;
+                data.tags = tags;
+            }
+            previewCache.data[id] = data;
+        },
+        unset: function (id, index) {
+            var chk = previewCache.count(id);
+            if (!chk) {
+                return;
+            }
+            if (chk === 1) {
+                previewCache.data[id].content = [];
+                previewCache.data[id].config = [];
+                return;
+            }
+            previewCache.data[id].content[index] = null;
+            previewCache.data[id].config[index] = null;
+        },
+        out: function (id) {
+            var html = '', data = previewCache.data[id], caption, len = previewCache.count(id, true);
+            if (len === 0) {
+                return {content: '', caption: ''};
+            }
+            for (var i = 0; i < len; i++) {
+                html += previewCache.get(id, i);
+            }
+            caption = data.msg(previewCache.count(id));
+            return {content: html, caption: caption};
+        },
+        footer: function (id, i, isDisabled) {
+            var data = previewCache.data[id];
+            isDisabled = isDisabled === undefined ? true : isDisabled;
+            if (data.config.length === 0 || isEmpty(data.config[i])) {
+                return '';
+            }
+            var config = data.config[i],
+                caption = isSet('caption', config) ? config.caption : '',
+                width = isSet('width', config) ? config.width : 'auto',
+                url = isSet('url', config) ? config.url : false,
+                key = isSet('key', config) ? config.key : null,
+                disabled = (url === false) && isDisabled,
+                actions = data.isDelete ? data.actions(false, true, disabled, url, key) : '',
+                footer = data.footer.replace(/\{actions}/g, actions);
+            return footer.replace(/\{caption}/g, caption)
+                .replace(/\{width}/g, width)
+                .replace(/\{indicator}/g, '')
+                .replace(/\{indicatorTitle}/g, '');
+        }
+    };
+    getNum = function (num, def) {
+        def = def || 0;
+        if (typeof num === "number") {
+            return num;
+        }
+        if (typeof num === "string") {
+            num = parseFloat(num);
+        }
+        return isNaN(num) ? def : num;
+    };
+    hasFileAPISupport = function () {
+        return !!(window.File && window.FileReader);
+    };
+    hasDragDropSupport = function () {
+        var div = document.createElement('div');
+        /** @namespace div.draggable */
+        /** @namespace div.ondragstart */
+        /** @namespace div.ondrop */
+        return !isIE(9) && !isEdge() && // Fix for MS Edge drag & drop support bug
+            (div.draggable !== undefined || (div.ondragstart !== undefined && div.ondrop !== undefined));
+    };
+    hasFileUploadSupport = function () {
+        return hasFileAPISupport() && window.FormData;
+    };
+    addCss = function ($el, css) {
+        $el.removeClass(css).addClass(css);
+    };
+    STYLE_SETTING = 'style="width:{width};height:{height};"';
+    OBJECT_PARAMS = '      <param name="controller" value="true" />\n' +
+        '      <param name="allowFullScreen" value="true" />\n' +
+        '      <param name="allowScriptAccess" value="always" />\n' +
+        '      <param name="autoPlay" value="false" />\n' +
+        '      <param name="autoStart" value="false" />\n' +
+        '      <param name="quality" value="high" />\n';
+    DEFAULT_PREVIEW = '<div class="file-preview-other">\n' +
+        '   <span class="{previewFileIconClass}">{previewFileIcon}</span>\n' +
+        '</div>';
+    defaultFileActionSettings = {
+        removeIcon: '<i class="glyphicon glyphicon-trash text-danger"></i>',
+        removeClass: 'btn btn-xs btn-default',
+        removeTitle: 'Remove file',
+        uploadIcon: '<i class="glyphicon glyphicon-upload text-info"></i>',
+        uploadClass: 'btn btn-xs btn-default',
+        uploadTitle: 'Upload file',
+        indicatorNew: '<i class="glyphicon glyphicon-hand-down text-warning"></i>',
+        indicatorSuccess: '<i class="glyphicon glyphicon-ok-sign text-success"></i>',
+        indicatorError: '<i class="glyphicon glyphicon-exclamation-sign text-danger"></i>',
+        indicatorLoading: '<i class="glyphicon glyphicon-hand-up text-muted"></i>',
+        indicatorNewTitle: 'Not uploaded yet',
+        indicatorSuccessTitle: 'Uploaded',
+        indicatorErrorTitle: 'Upload Error',
+        indicatorLoadingTitle: 'Uploading ...'
+    };
+    tMain1 = '{preview}\n' +
+        '<div class="kv-upload-progress hide"></div>\n' +
+        '<div class="input-group {class}">\n' +
+        '   {caption}\n' +
+        '   <div class="input-group-btn">\n' +
+        '       {remove}\n' +
+        '       {cancel}\n' +
+        '       {upload}\n' +
+        '       {browse}\n' +
+        '   </div>\n' +
+        '</div>';
+    tMain2 = '{preview}\n<div class="kv-upload-progress hide"></div>\n{remove}\n{cancel}\n{upload}\n{browse}\n';
+    tPreview = '<div class="file-preview {class}">\n' +
+        '    {close}' +
+        '    <div class="{dropClass}">\n' +
+        '    <div class="file-preview-thumbnails">\n' +
+        '    </div>\n' +
+        '    <div class="clearfix"></div>' +
+        '    <div class="file-preview-status text-center text-success"></div>\n' +
+        '    <div class="kv-fileinput-error"></div>\n' +
+        '    </div>\n' +
+        '</div>';
+    tClose = '<div class="close fileinput-remove">&times;</div>\n';
+    tIcon = '<span class="glyphicon glyphicon-file kv-caption-icon"></span>';
+    tCaption = '<div tabindex="500" class="form-control file-caption {class}">\n' +
+        '   <div class="file-caption-name"></div>\n' +
+        '</div>\n';
+    //noinspection HtmlUnknownAttribute
+    tBtnDefault = '<button type="{type}" tabindex="500" title="{title}" class="{css}" {status}>{icon}{label}</button>';
+    tBtnLink = '<a href="{href}" tabindex="500" title="{title}" class="{css}" {status}>{icon}{label}</a>';
+    tBtnBrowse = '<div tabindex="500" class="{css}" {status}>{icon}{label}</div>';
+    tModal = '<div id="{id}" class="file-preview-detail-modal modal fade" tabindex="-1">\n' +
+        '  <div class="modal-dialog modal-lg">\n' +
+        '    <div class="modal-content">\n' +
+        '      <div class="modal-header">\n' +
+        '        <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>\n' +
+        '        <h3 class="modal-title">{heading} <small>{title}</small></h3>\n' +
+        '      </div>\n' +
+        '      <div class="modal-body">\n' +
+        '           <pre>{body}</pre>\n' +
+        '      </div>\n' +
+        '    </div>\n' +
+        '  </div>\n' +
+        '</div>';
+    tProgress = '<div class="progress">\n' +
+        '    <div class="{class}" role="progressbar"' +
+        ' aria-valuenow="{percent}" aria-valuemin="0" aria-valuemax="100" style="width:{percent}%;">\n' +
+        '        {percent}%\n' +
+        '     </div>\n' +
+        '</div>';
+    tFooter = '<div class="file-thumbnail-footer">\n' +
+        '    <div class="file-footer-caption" title="{caption}">{caption}</div>\n' +
+        '    {progress} {actions}\n' +
+        '</div>';
+    tActions = '<div class="file-actions">\n' +
+        '    <div class="file-footer-buttons">\n' +
+        '        {upload}{delete}{other}' +
+        '    </div>\n' +
+        '    <div class="file-upload-indicator" title="{indicatorTitle}">{indicator}</div>\n' +
+        '    <div class="clearfix"></div>\n' +
+        '</div>';
+    tActionDelete = '<button type="button" class="kv-file-remove {removeClass}" ' +
+        'title="{removeTitle}" {dataUrl}{dataKey}>{removeIcon}</button>\n';
+    tActionUpload = '<button type="button" class="kv-file-upload {uploadClass}" title="{uploadTitle}">' +
+        '   {uploadIcon}\n</button>\n';
+    tZoom = '<button type="button" class="btn btn-default btn-xs btn-block" title="{zoomTitle}: {caption}" onclick="{dialog}">\n' +
+        '   {zoomInd}\n' +
+        '</button>\n';
+    tGeneric = '<div class="file-preview-frame{frameClass}" id="{previewId}" data-fileindex="{fileindex}">\n' +
+        '   {content}\n' +
+        '   {footer}\n' +
+        '</div>\n';
+    tHtml = '<div class="file-preview-frame{frameClass}" id="{previewId}" data-fileindex="{fileindex}">\n' +
+        '    <object class="file-object" data="{data}" type="{type}" width="{width}" height="{height}">\n' +
+        '       ' + DEFAULT_PREVIEW + '\n' +
+        '    </object>\n' +
+        '   {footer}\n' +
+        '</div>';
+    tImage = '<div class="file-preview-frame{frameClass}" id="{previewId}" data-fileindex="{fileindex}">\n' +
+        '   <img src="{data}" class="file-preview-image" title="{caption}" alt="{caption}" ' + STYLE_SETTING + '>\n' +
+        '   {footer}\n' +
+        '</div>\n';
+    tText = '<div class="file-preview-frame{frameClass}" id="{previewId}" data-fileindex="{fileindex}">\n' +
+        '   <pre class="file-preview-text" title="{caption}" ' + STYLE_SETTING + '>{data}</pre>\n' +
+        '   {zoom}\n' +
+        '   {footer}\n' +
+        '</div>';
+    tVideo = '<div class="file-preview-frame{frameClass}" id="{previewId}" data-fileindex="{fileindex}"' +
+        ' title="{caption}" ' + STYLE_SETTING + '>\n' +
+        '   <video width="{width}" height="{height}" controls>\n' +
+        '       <source src="{data}" type="{type}">\n' +
+        '       ' + DEFAULT_PREVIEW + '\n' +
+        '   </video>\n' +
+        '   {footer}\n' +
+        '</div>\n';
+    tAudio = '<div class="file-preview-frame{frameClass}" id="{previewId}" data-fileindex="{fileindex}"' +
+        ' title="{caption}" ' + STYLE_SETTING + '>\n' +
+        '   <audio controls>\n' +
+        '       <source src="' + '{data}' + '" type="{type}">\n' +
+        '       ' + DEFAULT_PREVIEW + '\n' +
+        '   </audio>\n' +
+        '   {footer}\n' +
+        '</div>';
+    tFlash = '<div class="file-preview-frame{frameClass}" id="{previewId}" data-fileindex="{fileindex}"' +
+        ' title="{caption}" ' + STYLE_SETTING + '>\n' +
+        '   <object class="file-object" type="application/x-shockwave-flash" width="{width}" height="{height}" data="{data}">\n' +
+        OBJECT_PARAMS + '       ' + DEFAULT_PREVIEW + '\n' +
+        '   </object>\n' +
+        '   {footer}\n' +
+        '</div>\n';
+    tObject = '<div class="file-preview-frame{frameClass}" id="{previewId}" data-fileindex="{fileindex}"' +
+        ' title="{caption}" ' + STYLE_SETTING + '>\n' +
+        '   <object class="file-object" data="{data}" type="{type}" width="{width}" height="{height}">\n' +
+        '       <param name="movie" value="{caption}" />\n' +
+        OBJECT_PARAMS + '         ' + DEFAULT_PREVIEW + '\n' +
+        '   </object>\n' +
+        '   {footer}\n' +
+        '</div>';
+    tOther = '<div class="file-preview-frame{frameClass}" id="{previewId}" data-fileindex="{fileindex}"' +
+        ' title="{caption}" ' + STYLE_SETTING + '>\n' +
+        '   <div class="file-preview-other-frame">\n' +
+        '   ' + DEFAULT_PREVIEW + '\n' +
+        '   </div>\n' +
+        '   <div class="file-preview-other-footer">{footer}</div>\n' +
+        '</div>';
+    defaultLayoutTemplates = {
+        main1: tMain1,
+        main2: tMain2,
+        preview: tPreview,
+        close: tClose,
+        zoom: tZoom,
+        icon: tIcon,
+        caption: tCaption,
+        modal: tModal,
+        progress: tProgress,
+        footer: tFooter,
+        actions: tActions,
+        actionDelete: tActionDelete,
+        actionUpload: tActionUpload,
+        btnDefault: tBtnDefault,
+        btnLink: tBtnLink,
+        btnBrowse: tBtnBrowse
+    };
+    defaultPreviewTemplates = {
+        generic: tGeneric,
+        html: tHtml,
+        image: tImage,
+        text: tText,
+        video: tVideo,
+        audio: tAudio,
+        flash: tFlash,
+        object: tObject,
+        other: tOther
+    };
+    defaultPreviewTypes = ['image', 'html', 'text', 'video', 'audio', 'flash', 'object'];
+    defaultPreviewSettings = {
+        image: {width: "auto", height: "160px"},
+        html: {width: "213px", height: "160px"},
+        text: {width: "160px", height: "136px"},
+        video: {width: "213px", height: "160px"},
+        audio: {width: "213px", height: "80px"},
+        flash: {width: "213px", height: "160px"},
+        object: {width: "160px", height: "160px"},
+        other: {width: "160px", height: "160px"}
+    };
+    defaultFileTypeSettings = {
+        image: function (vType, vName) {
+            return compare(vType, 'image.*') || compare(vName, /\.(gif|png|jpe?g)$/i);
+        },
+        html: function (vType, vName) {
+            return compare(vType, 'text/html') || compare(vName, /\.(htm|html)$/i);
+        },
+        text: function (vType, vName) {
+            return compare(vType, 'text.*') || compare(vType, /\.(xml|javascript)$/i) ||
+                compare(vName, /\.(txt|md|csv|nfo|ini|json|php|js|css)$/i);
+        },
+        video: function (vType, vName) {
+            return compare(vType, 'video.*') && (compare(vType, /(ogg|mp4|mp?g|webm|3gp)$/i) ||
+                compare(vName, /\.(og?|mp4|webm|mp?g|3gp)$/i));
+        },
+        audio: function (vType, vName) {
+            return compare(vType, 'audio.*') && (compare(vType, /(ogg|mp3|mp?g|wav)$/i) ||
+                compare(vName, /\.(og?|mp3|mp?g|wav)$/i));
+        },
+        flash: function (vType, vName) {
+            return compare(vType, 'application/x-shockwave-flash', true) || compare(vName, /\.(swf)$/i);
+        },
+        object: function (vType, vName) {
+            return compare(vType, 'application/pdf', true) || compare(vName, /\.(pdf)$/i);
+        },
+        other: function () {
+            return true;
+        }
+    };
+    isEmpty = function (value, trim) {
+        return value === undefined || value === null || value.length === 0 || (trim && $.trim(value) === '');
+    };
+    isArray = function (a) {
+        return Array.isArray(a) || Object.prototype.toString.call(a) === '[object Array]';
+    };
+    isSet = function (needle, haystack) {
+        return (typeof haystack === 'object' && needle in haystack);
+    };
+    getElement = function (options, param, value) {
+        return (isEmpty(options) || isEmpty(options[param])) ? value : $(options[param]);
+    };
+    uniqId = function () {
+        return Math.round(new Date().getTime() + (Math.random() * 100));
+    };
+    htmlEncode = function (str) {
+        return str.replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&apos;');
+    };
+    replaceTags = function (str, tags) {
+        var out = str;
+        if (!tags) {
+            return out;
+        }
+        $.each(tags, function (key, value) {
+            if (typeof value === "function") {
+                value = value();
+            }
+            out = out.split(key).join(value);
+        });
+        return out;
+    };
+    cleanMemory = function ($thumb) {
+        var data = $thumb.is('img') ? $thumb.attr('src') : $thumb.find('source').attr('src');
+        /** @namespace objUrl.revokeObjectURL */
+        objUrl.revokeObjectURL(data);
+    };
+    FileInput = function (element, options) {
+        var self = this;
+        self.$element = $(element);
+        if (!self._validate()) {
+            return;
+        }
+        self.isPreviewable = hasFileAPISupport();
+        self.isIE9 = isIE(9);
+        self.isIE10 = isIE(10);
+        if (self.isPreviewable || self.isIE9) {
+            self._init(options);
+            self._listen();
+        } else {
+            self.$element.removeClass('file-loading');
+        }
+    };
 
     FileInput.prototype = {
         constructor: FileInput,
-        init: function (options) {
+        _init: function (options) {
             var self = this, $el = self.$element, t;
             $.each(options, function (key, value) {
-                if (key === 'maxFileCount' || key === 'maxFileSize') {
-                    self[key] = getNum(value);
+                switch (key) {
+                    case 'minFileCount':
+                    case 'maxFileCount':
+                    case 'maxFileSize':
+                        self[key] = getNum(value);
+                        break;
+                    default:
+                        self[key] = value;
+                        break;
                 }
-                self[key] = value;
             });
             self.fileInputCleared = false;
             self.fileBatchCompleted = true;
-            if (isEmpty(self.allowedPreviewTypes)) {
-                self.allowedPreviewTypes = defaultPreviewTypes;
+            if (!self.isPreviewable) {
+                self.showPreview = false;
             }
             self.uploadFileAttr = !isEmpty($el.attr('name')) ? $el.attr('name') : 'file_data';
             self.reader = null;
             self.formdata = {};
-            self.isIE9 = isIE(9);
-            self.isIE10 = isIE(10);
-            self.filestack = [];
+            self.clearStack();
+            self.uploadCount = 0;
+            self.uploadStatus = {};
+            self.uploadLog = [];
+            self.uploadAsyncCount = 0;
+            self.loadedImages = [];
+            self.totalImagesCount = 0;
             self.ajaxRequests = [];
             self.isError = false;
-            self.uploadAborted = false;
+            self.ajaxAborted = false;
+            self.cancelling = false;
+            t = self._getLayoutTemplate('progress');
+            self.progressTemplate = t.replace('{class}', self.progressClass);
+            self.progressCompleteTemplate = t.replace('{class}', self.progressCompleteClass);
+            self.progressErrorTemplate = t.replace('{class}', self.progressErrorClass);
             self.dropZoneEnabled = hasDragDropSupport() && self.dropZoneEnabled;
             self.isDisabled = self.$element.attr('disabled') || self.$element.attr('readonly');
-            self.isUploadable = hasFileUploadSupport && !isEmpty(self.uploadUrl);
-            self.slug = typeof options.slugCallback === "function" ? options.slugCallback : self.slugDefault;
-            self.mainTemplate = self.showCaption ? self.getLayoutTemplate('main1') : self.getLayoutTemplate('main2');
-            self.captionTemplate = self.getLayoutTemplate('caption');
-            self.previewGenericTemplate = self.getPreviewTemplate('generic');
+            self.isUploadable = hasFileUploadSupport() && !isEmpty(self.uploadUrl);
+            self.slug = typeof options.slugCallback === "function" ? options.slugCallback : self._slugDefault;
+            self.mainTemplate = self.showCaption ? self._getLayoutTemplate('main1') : self._getLayoutTemplate('main2');
+            self.captionTemplate = self._getLayoutTemplate('caption');
+            self.previewGenericTemplate = self._getPreviewTemplate('generic');
+            if (self.resizeImage && (self.maxImageWidth || self.maxImageHeight)) {
+                self.imageCanvas = document.createElement('canvas');
+                self.imageCanvasContext = self.imageCanvas.getContext('2d');
+            }
             if (isEmpty(self.$element.attr('id'))) {
                 self.$element.attr('id', uniqId());
             }
             if (self.$container === undefined) {
-                self.$container = self.createContainer();
+                self.$container = self._createContainer();
             } else {
-                self.refreshContainer();
+                self._refreshContainer();
             }
+            self.$dropZone = self.$container.find('.file-drop-zone');
             self.$progress = self.$container.find('.kv-upload-progress');
-            self.$btnUpload = self.$container.find('.kv-fileinput-upload');
+            self.$btnUpload = self.$container.find('.fileinput-upload');
             self.$captionContainer = getElement(options, 'elCaptionContainer', self.$container.find('.file-caption'));
             self.$caption = getElement(options, 'elCaptionText', self.$container.find('.file-caption-name'));
             self.$previewContainer = getElement(options, 'elPreviewContainer', self.$container.find('.file-preview'));
@@ -17388,45 +18203,194 @@ else if ( jQuery ) {
                 addCss(self.$errorContainer, self.msgErrorClass);
             }
             self.$errorContainer.hide();
-            self.fileActionSettings = $.extend(defaultFileActionSettings, options.fileActionSettings);
+            self.fileActionSettings = $.extend(true, defaultFileActionSettings, options.fileActionSettings);
             self.previewInitId = "preview-" + uniqId();
             self.id = self.$element.attr('id');
             previewCache.init(self);
-            self.initPreview(true);
-            self.initPreviewDeletes();
+            self._initPreview(true);
+            self._initPreviewDeletes();
             self.options = options;
-            self.setFileDropZoneTitle();
-            self.uploadCount = 0;
-            self.uploadPercent = 0;
+            self._setFileDropZoneTitle();
             self.$element.removeClass('file-loading');
-            t = self.getLayoutTemplate('progress');
-            self.progressTemplate = t.replace('{class}', self.progressClass);
-            self.progressCompleteTemplate = t.replace('{class}', self.progressCompleteClass);
-            self.setEllipsis();
+            if (self.$element.attr('disabled')) {
+                self.disable();
+            }
         },
-        parseError: function (jqXHR, errorThrown, fileName) {
+        _validate: function () {
+            var self = this, $exception;
+            if (self.$element.attr('type') === 'file') {
+                return true;
+            }
+            $exception = '<div class="help-block alert alert-warning">' +
+                '<h4>Invalid Input Type</h4>' +
+                'You must set an input <code>type = file</code> for <b>bootstrap-fileinput</b> plugin to initialize.' +
+                '</div>';
+            self.$element.after($exception);
+            return false;
+        },
+        _errorsExist: function () {
+            var self = this, $err;
+            if (self.$errorContainer.find('li').length) {
+                return true;
+            }
+            $err = $(document.createElement('div')).html(self.$errorContainer.html());
+            $err.find('span.kv-error-close').remove();
+            $err.find('ul').remove();
+            return $.trim($err.text()).length ? true : false;
+        },
+        _errorHandler: function (evt, caption) {
+            var self = this, err = evt.target.error;
+            /** @namespace err.NOT_FOUND_ERR */
+            /** @namespace err.SECURITY_ERR */
+            /** @namespace err.NOT_READABLE_ERR */
+            if (err.code === err.NOT_FOUND_ERR) {
+                self._showError(self.msgFileNotFound.replace('{name}', caption));
+            } else if (err.code === err.SECURITY_ERR) {
+                self._showError(self.msgFileSecured.replace('{name}', caption));
+            } else if (err.code === err.NOT_READABLE_ERR) {
+                self._showError(self.msgFileNotReadable.replace('{name}', caption));
+            } else if (err.code === err.ABORT_ERR) {
+                self._showError(self.msgFilePreviewAborted.replace('{name}', caption));
+            } else {
+                self._showError(self.msgFilePreviewError.replace('{name}', caption));
+            }
+        },
+        _addError: function (msg) {
+            var self = this, $error = self.$errorContainer;
+            if (msg && $error.length) {
+                $error.html(self.errorCloseButton + msg);
+                handler($error.find('.kv-error-close'), 'click', function () {
+                    $error.fadeOut('slow');
+                });
+            }
+        },
+        _resetErrors: function (fade) {
+            var self = this, $error = self.$errorContainer;
+            self.isError = false;
+            self.$container.removeClass('has-error');
+            $error.html('');
+            if (fade) {
+                $error.fadeOut('slow');
+            } else {
+                $error.hide();
+            }
+        },
+        _showFolderError: function (folders) {
+            var self = this, $error = self.$errorContainer, msg;
+            if (!folders) {
+                return;
+            }
+            msg = self.msgFoldersNotAllowed.replace(/\{n}/g, folders);
+            self._addError(msg);
+            addCss(self.$container, 'has-error');
+            $error.fadeIn(800);
+            self._raise('filefoldererror', [folders, msg]);
+        },
+        _showUploadError: function (msg, params, event) {
+            var self = this, $error = self.$errorContainer, ev = event || 'fileuploaderror', e = params && params.id ?
+            '<li data-file-id="' + params.id + '">' + msg + '</li>' : '<li>' + msg + '</li>';
+            if ($error.find('ul').length === 0) {
+                self._addError('<ul>' + e + '</ul>');
+            } else {
+                $error.find('ul').append(e);
+            }
+            $error.fadeIn(800);
+            self._raise(ev, [params, msg]);
+            self.$container.removeClass('file-input-new');
+            addCss(self.$container, 'has-error');
+            return true;
+        },
+        _showError: function (msg, params, event) {
+            var self = this, $error = self.$errorContainer, ev = event || 'fileerror';
+            params = params || {};
+            params.reader = self.reader;
+            self._addError(msg);
+            $error.fadeIn(800);
+            self._raise(ev, [params, msg]);
+            if (!self.isUploadable) {
+                self._clearFileInput();
+            }
+            self.$container.removeClass('file-input-new');
+            addCss(self.$container, 'has-error');
+            self.$btnUpload.attr('disabled', true);
+            return true;
+        },
+        _noFilesError: function (params) {
+            var self = this, label = self.minFileCount > 1 ? self.filePlural : self.fileSingle,
+                msg = self.msgFilesTooLess.replace('{n}', self.minFileCount).replace('{files}', label),
+                $error = self.$errorContainer;
+            self._addError(msg);
+            self.isError = true;
+            self._updateFileDetails(0);
+            $error.fadeIn(800);
+            self._raise('fileerror', [params, msg]);
+            self._clearFileInput();
+            addCss(self.$container, 'has-error');
+        },
+        _parseError: function (jqXHR, errorThrown, fileName) {
+            /** @namespace jqXHR.responseJSON */
             var self = this, errMsg = $.trim(errorThrown + ''),
                 dot = errMsg.slice(-1) === '.' ? '' : '.',
-                text = $(jqXHR.responseText).text();
-            if (self.showAjaxErrorDetails) {
+                text = jqXHR.responseJSON !== undefined && jqXHR.responseJSON.error !== undefined ?
+                    jqXHR.responseJSON.error : jqXHR.responseText;
+            if (self.cancelling && self.msgUploadAborted) {
+                errMsg = self.msgUploadAborted;
+            }
+            if (self.showAjaxErrorDetails && text) {
                 text = $.trim(text.replace(/\n\s*\n/g, '\n'));
                 text = text.length > 0 ? '<pre>' + text + '</pre>' : '';
                 errMsg += dot + text;
             } else {
                 errMsg += dot;
             }
-            return fileName ? '<b>' + fileName + ': </b>' + jqXHR : errMsg;
+            self.cancelling = false;
+            return fileName ? '<b>' + fileName + ': </b>' + errMsg : errMsg;
         },
-        raise: function (event, params) {
-            var self = this, e = $.Event(event), out;
+        _parseFileType: function (file) {
+            var self = this, isValid, vType, cat, i;
+            for (i = 0; i < defaultPreviewTypes.length; i += 1) {
+                cat = defaultPreviewTypes[i];
+                isValid = isSet(cat, self.fileTypeSettings) ? self.fileTypeSettings[cat] : defaultFileTypeSettings[cat];
+                vType = isValid(file.type, file.name) ? cat : '';
+                if (!isEmpty(vType)) {
+                    return vType;
+                }
+            }
+            return 'other';
+        },
+        _parseFilePreviewIcon: function (content, fname) {
+            var self = this, ext, icn = self.previewFileIcon;
+            if (fname && fname.indexOf('.') > -1) {
+                ext = fname.split('.').pop();
+                if (self.previewFileIconSettings && self.previewFileIconSettings[ext]) {
+                    icn = self.previewFileIconSettings[ext];
+                }
+                if (self.previewFileExtSettings) {
+                    $.each(self.previewFileExtSettings, function (key, func) {
+                        if (self.previewFileIconSettings[key] && func(ext)) {
+                            icn = self.previewFileIconSettings[key];
+                        }
+                    });
+                }
+            }
+            if (content.indexOf('{previewFileIcon}') > -1) {
+                return content.replace(/\{previewFileIconClass}/g, self.previewFileIconClass).replace(
+                    /\{previewFileIcon}/g, icn);
+            }
+            return content;
+        },
+        _raise: function (event, params) {
+            var self = this, e = $.Event(event);
             if (params !== undefined) {
                 self.$element.trigger(e, params);
             } else {
                 self.$element.trigger(e);
             }
-            out = e.result || false;
-            if (!out) {
-                return;
+            if (e.isDefaultPrevented()) {
+                return false;
+            }
+            if (!e.result) {
+                return e.result;
             }
             switch (event) {
                 // ignore these events
@@ -17442,407 +18406,178 @@ else if ( jQuery ) {
                 case 'filebatchuploaderror':
                 case 'filedeleteerror':
                 case 'filecustomerror':
+                case 'filesuccessremove':
                     break;
-                // can trigger filecustomerror to abort upload
+                // receive data response via `filecustomerror` event`
                 default:
-                    self.uploadAborted = out;
+                    self.ajaxAborted = e.result;
                     break;
             }
+            return true;
         },
-        getLayoutTemplate: function (t) {
-            var self = this,
-                template = isSet(t, self.layoutTemplates) ? self.layoutTemplates[t] : defaultLayoutTemplates[t];
-            if (isEmpty(self.customLayoutTags)) {
-                return template;
+        _listen: function () {
+            var self = this, $el = self.$element, $form = $el.closest('form'), $cont = self.$container;
+            handler($el, 'change', $.proxy(self._change, self));
+            handler(self.$btnFile, 'click', $.proxy(self._browse, self));
+            handler($form, 'reset', $.proxy(self.reset, self));
+            handler($cont.find('.fileinput-remove:not([disabled])'), 'click', $.proxy(self.clear, self));
+            handler($cont.find('.fileinput-cancel'), 'click', $.proxy(self.cancel, self));
+            self._initDragDrop();
+            if (!self.isUploadable) {
+                handler($form, 'submit', $.proxy(self._submitForm, self));
             }
-            return replaceTags(template, self.customLayoutTags);
+            handler(self.$container.find('.fileinput-upload'), 'click', $.proxy(self._uploadClick, self));
         },
-        getPreviewTemplate: function (t) {
-            var self = this,
-                template = isSet(t, self.previewTemplates) ? self.previewTemplates[t] : defaultPreviewTemplates[t];
-            template = template.repl('{previewFileIcon}', self.previewFileIcon);
-            if (isEmpty(self.customPreviewTags)) {
-                return template;
-            }
-            return replaceTags(template, self.customPreviewTags);
-        },
-        getOutData: function (jqXHR, responseData, filesData) {
-            var self = this;
-            jqXHR = jqXHR || {};
-            responseData = responseData || {};
-            filesData = filesData || self.filestack.slice(0) || {};
-            return {
-                form: self.formdata,
-                files: filesData,
-                extra: self.getExtraData(),
-                response: responseData,
-                reader: self.reader,
-                jqXHR: jqXHR
-            };
-        },
-        setEllipsis: function () {
-            var self = this, $capCont = self.$captionContainer, $cap = self.$caption,
-                $div = $cap.clone().css('height', 'auto').hide();
-            $capCont.parent().before($div);
-            $capCont.removeClass('kv-has-ellipsis');
-            if ($div.outerWidth() > $cap.outerWidth()) {
-                $capCont.addClass('kv-has-ellipsis');
-            }
-            $div.remove();
-        },
-        listen: function () {
-            var self = this, $el = self.$element, $cap = self.$captionContainer, $btnFile = self.$btnFile,
-                $form = $el.closest('form');
-            $el.on('change', $.proxy(self.change, self));
-            $(window).on('resize', function () {
-                self.setEllipsis();
-            });
-            $btnFile.off('click').on('click', function () {
-                self.raise('filebrowse');
-                if (self.isError && !self.isUploadable) {
-                    self.clear();
-                }
-                $cap.focus();
-            });
-            $form.off('reset').on('reset', $.proxy(self.reset, self));
-            self.$container.off('click')
-                .on('click', '.fileinput-remove:not([disabled])', $.proxy(self.clear, self))
-                .on('click', '.fileinput-cancel', $.proxy(self.cancel, self));
+        _initDragDrop: function () {
+            var self = this, $zone = self.$dropZone;
             if (self.isUploadable && self.dropZoneEnabled && self.showPreview) {
-                self.initDragDrop();
+                handler($zone, 'dragenter dragover', $.proxy(self._zoneDragEnter, self));
+                handler($zone, 'dragleave', $.proxy(self._zoneDragLeave, self));
+                handler($zone, 'drop', $.proxy(self._zoneDrop, self));
+                handler($(document), 'dragenter dragover drop', self._zoneDragDropInit);
+            }
+        },
+        _zoneDragDropInit: function (e) {
+            e.stopPropagation();
+            e.preventDefault();
+        },
+        _zoneDragEnter: function (e) {
+            var self = this, hasFiles = $.inArray('Files', e.originalEvent.dataTransfer.types) > -1;
+            self._zoneDragDropInit(e);
+            if (self.isDisabled || !hasFiles) {
+                e.originalEvent.dataTransfer.effectAllowed = 'none';
+                e.originalEvent.dataTransfer.dropEffect = 'none';
+                return;
+            }
+            addCss(self.$dropZone, 'file-highlighted');
+        },
+        _zoneDragLeave: function (e) {
+            var self = this;
+            self._zoneDragDropInit(e);
+            if (self.isDisabled) {
+                return;
+            }
+            self.$dropZone.removeClass('file-highlighted');
+        },
+        _zoneDrop: function (e) {
+            var self = this;
+            e.preventDefault();
+            /** @namespace e.originalEvent.dataTransfer */
+            if (self.isDisabled || isEmpty(e.originalEvent.dataTransfer.files)) {
+                return;
+            }
+            self._change(e, 'dragdrop');
+            self.$dropZone.removeClass('file-highlighted');
+        },
+        _uploadClick: function (e) {
+            var self = this, $btn = self.$container.find('.fileinput-upload'), $form,
+                isEnabled = !$btn.hasClass('disabled') && isEmpty($btn.attr('disabled'));
+            if (e && e.isDefaultPrevented()) {
+                return;
             }
             if (!self.isUploadable) {
-                $form.on('submit', $.proxy(self.submitForm, self));
+                if (isEnabled && $btn.attr('type') !== 'submit') {
+                    $form = $btn.closest('form');
+                    // downgrade to normal form submit if possible
+                    if ($form.length) {
+                        $form.trigger('submit');
+                    }
+                    e.preventDefault();
+                }
+                return;
             }
-            self.$container.find('.kv-fileinput-upload').off('click').on('click', function (e) {
-                if (!self.isUploadable) {
-                    return;
-                }
-                e.preventDefault();
-                if (!$(this).hasClass('disabled') && isEmpty($(this).attr('disabled'))) {
-                    self.upload();
-                }
-            });
+            e.preventDefault();
+            if (isEnabled) {
+                self.upload();
+            }
         },
-        submitForm: function () {
+        _submitForm: function () {
             var self = this, $el = self.$element, files = $el.get(0).files;
-            if (files && files.length < self.minFileCount && self.minFileCount > 0) {
-                self.noFilesError({});
+            if (files && self.minFileCount > 0 && self._getFileCount(files.length) < self.minFileCount) {
+                self._noFilesError({});
                 return false;
             }
-            return !self.abort({});
+            return !self._abort({});
         },
-        abort: function (params) {
-            var self = this, data;
-            if (self.uploadAborted && typeof self.uploadAborted === "object" && self.uploadAborted.message !== undefined) {
-                if (self.uploadAborted.data !== undefined) {
-                    data = self.getOutData({}, self.uploadAborted.data);
-                } else {
-                    data = self.getOutData();
-                }
-                data = $.extend(data, params);
-                self.showUploadError(self.uploadAborted.message, data, 'filecustomerror');
-                return true;
+        _clearPreview: function () {
+            var self = this, $thumbs = !self.showUploadedThumbs ? self.$preview.find('.file-preview-frame') :
+                self.$preview.find('.file-preview-frame:not(.file-preview-success)');
+            $thumbs.remove();
+            if (!self.$preview.find('.file-preview-frame').length || !self.showPreview) {
+                self._resetUpload();
             }
-            return false;
+            self._validateDefaultPreview();
         },
-        noFilesError: function (params) {
-            var self = this, label = self.minFileCount > 1 ? self.filePlural : self.fileSingle,
-                msg = self.msgFilesTooLess.repl('{n}', self.minFileCount).repl('{files}', label),
-                $error = self.$errorContainer;
-            $error.html(msg);
-            self.isError = true;
-            self.updateFileDetails(0);
-            $error.fadeIn(800);
-            self.raise('fileerror', [params]);
-            self.clearFileInput();
-            addCss(self.$container, 'has-error');
-        },
-        setProgress: function (p) {
-            var self = this, pct = Math.min(p, 100),
-                template = pct < 100 ? self.progressTemplate : self.progressCompleteTemplate;
-            self.$progress.html(template.repl('{percent}', pct));
-        },
-        upload: function () {
-            var self = this, totLen = self.getFileStack().length, params = {},
-                i, outData, len, hasExtraData = !$.isEmptyObject(self.getExtraData());
-            if (totLen < self.minFileCount && self.minFileCount > 0) {
-                self.noFilesError(params);
-                return;
-            }
-            if (!self.isUploadable || self.isDisabled || (totLen === 0 && !hasExtraData)) {
-                return;
-            }
-            self.resetUpload();
-            self.$progress.removeClass('hide');
-            self.uploadCount = 0;
-            self.uploadPercent = 0;
-            self.lock();
-            self.setProgress(0);
-            if (totLen === 0 && hasExtraData) {
-                self.uploadExtraOnly();
-                return;
-            }
-            len = self.filestack.length;
-            self.hasInitData = false;
-            if (self.uploadAsync && self.showPreview) {
-                outData = self.getOutData();
-                self.raise('filebatchpreupload', [outData]);
-                self.fileBatchCompleted = false;
-                self.uploadCache = {content: [], config: [], tags: [], append: true};
-                for (i = 0; i < len; i += 1) {
-                    if (self.filestack[i] !== undefined) {
-                        self.uploadSingle(i, self.filestack, true);
-                    }
-                }
-                return;
-            }
-            self.uploadBatch();
-        },
-        lock: function () {
-            var self = this;
-            self.resetErrors();
-            self.disable();
-            if (self.showRemove) {
-                addCss(self.$container.find('.fileinput-remove'), 'hide');
-            }
-            if (self.showCancel) {
-                self.$container.find('.fileinput-cancel').removeClass('hide');
-            }
-            self.raise('filelock', [self.filestack, self.getExtraData()]);
-        },
-        unlock: function (reset) {
-            var self = this;
-            if (reset === undefined) {
-                reset = true;
-            }
-            self.enable();
-            if (self.showCancel) {
-                addCss(self.$container.find('.fileinput-cancel'), 'hide');
-            }
-            if (self.showRemove) {
-                self.$container.find('.fileinput-remove').removeClass('hide');
-            }
-            if (reset) {
-                self.resetFileStack();
-            }
-            self.raise('fileunlock', [self.filestack, self.getExtraData()]);
-        },
-        resetFileStack: function () {
-            var self = this, i = 0, newstack = [];
-            self.$preview.find(PREVIEW_FRAMES).each(function () {
-                var $thumb = $(this), ind = $thumb.attr('data-fileindex'),
-                    file = self.filestack[ind];
-                if (ind === -1) {
-                    return;
-                }
-                if (file !== undefined) {
-                    newstack[i] = file;
-                    $thumb.attr({
-                        'id': self.previewInitId + '-' + i,
-                        'data-fileindex': i
-                    });
-                    i += 1;
-                } else {
-                    $thumb.attr({
-                        'id': 'uploaded-' + uniqId(),
-                        'data-fileindex': '-1'
-                    });
-                }
-            });
-            self.filestack = newstack;
-        },
-        refresh: function (options) {
-            var self = this, $el = self.$element, $zone,
-                params = (arguments.length) ? $.extend(self.options, options) : self.options;
-            $el.off();
-            self.init(params);
-            $zone = self.$container.find('.file-drop-zone');
-            $zone.off('dragenter dragover drop');
-            $(document).off('dragenter dragover drop');
-            self.listen();
-            self.setFileDropZoneTitle();
-        },
-        initDragDrop: function () {
-            var self = this, $zone = self.$container.find('.file-drop-zone');
-            $zone.off('dragenter dragover drop');
-            $(document).off('dragenter dragover drop');
-            $zone.on('dragenter dragover', function (e) {
-                e.stopPropagation();
-                e.preventDefault();
-                if (self.isDisabled) {
-                    return;
-                }
-                addCss($(this), 'highlighted');
-            });
-            $zone.on('dragleave', function (e) {
-                e.stopPropagation();
-                e.preventDefault();
-                if (self.isDisabled) {
-                    return;
-                }
-                $(this).removeClass('highlighted');
-            });
-            $zone.on('drop', function (e) {
-                e.preventDefault();
-                if (self.isDisabled) {
-                    return;
-                }
-                self.change(e, 'dragdrop');
-                $(this).removeClass('highlighted');
-            });
-            $(document).on('dragenter dragover drop', function (e) {
-                e.stopPropagation();
-                e.preventDefault();
-            });
-        },
-        setFileDropZoneTitle: function () {
-            var self = this, $zone = self.$container.find('.file-drop-zone');
-            $zone.find('.' + self.dropZoneTitleClass).remove();
-            if (!self.isUploadable || !self.showPreview || $zone.length === 0 || self.getFileStack().length > 0 || !self.dropZoneEnabled) {
-                return;
-            }
-            if ($zone.find('.file-preview-frame').length === 0) {
-                $zone.prepend('<div class="' + self.dropZoneTitleClass + '">' + self.dropZoneTitle + '</div>');
-            }
-            self.$container.removeClass('file-input-new');
-            addCss(self.$container, 'file-input-ajax-new');
-        },
-        initFileActions: function () {
-            var self = this;
-            self.$preview.find('.kv-file-remove').each(function () {
-                var $el = $(this), $frame = $el.closest('.file-preview-frame'),
-                    ind = $frame.attr('data-fileindex'), n, cap;
-                $el.off('click').on('click', function () {
-                    $frame.fadeOut('slow', function () {
-                        self.filestack[ind] = undefined;
-                        self.clearObjects($frame);
-                        $frame.remove();
-                        var filestack = self.getFileStack(), len = filestack.length,
-                            chk = previewCache.count(self.id);
-                        self.clearFileInput();
-                        if (len === 0 && chk === 0) {
-                            self.reset();
-                        } else {
-                            n = chk + len;
-                            cap = n > 1 ? self.msgSelected.repl('{n}', n) : filestack[0].name;
-                            self.setCaption(cap);
-                        }
-                    });
-                });
-            });
-            self.$preview.find('.kv-file-upload').each(function () {
-                var $el = $(this);
-                $el.off('click').on('click', function () {
-                    var $frame = $el.closest('.file-preview-frame'),
-                        ind = $frame.attr('data-fileindex');
-                    self.uploadSingle(ind, self.filestack, false);
-                });
-            });
-        },
-        renderFileFooter: function (caption, width) {
-            var self = this, config = self.fileActionSettings, footer, out,
-                template = self.getLayoutTemplate('footer');
-            if (self.isUploadable) {
-                footer = template.repl('{actions}', self.renderFileActions(true, true, false, false, false, false));
-                out = footer.repl('{caption}', caption)
-                    .repl('{width}', width)
-                    .repl('{indicator}', config.indicatorNew)
-                    .repl('{indicatorTitle}', config.indicatorNewTitle);
-            } else {
-                out = template.repl('{actions}', '')
-                    .repl('{caption}', caption)
-                    .repl('{width}', width)
-                    .repl('{indicator}', '')
-                    .repl('{indicatorTitle}', '');
-            }
-            out = replaceTags(out, self.previewThumbTags);
-            return out;
-        },
-        renderFileActions: function (showUpload, showDelete, disabled, url, key, index) {
-            if (!showUpload && !showDelete) {
-                return '';
-            }
-            var self = this,
-                vUrl = url === false ? '' : ' data-url="' + url + '"',
-                vKey = key === false ? '' : ' data-key="' + key + '"',
-                btnDelete = self.getLayoutTemplate('actionDelete'),
-                btnUpload = '',
-                template = self.getLayoutTemplate('actions'),
-                otherButtons = self.otherActionButtons.repl('{dataKey}', vKey),
-                config = self.fileActionSettings,
-                removeClass = disabled ? config.removeClass + ' disabled' : config.removeClass;
-            btnDelete = btnDelete
-                .repl('{removeClass}', removeClass)
-                .repl('{removeIcon}', config.removeIcon)
-                .repl('{removeTitle}', config.removeTitle)
-                .repl('{dataUrl}', vUrl)
-                .repl('{dataKey}', vKey);
-            if (showUpload) {
-                btnUpload = self.getLayoutTemplate('actionUpload')
-                    .repl('{uploadClass}', config.uploadClass)
-                    .repl('{uploadIcon}', config.uploadIcon)
-                    .repl('{uploadTitle}', config.uploadTitle);
-            }
-            return template
-                .repl('{delete}', btnDelete)
-                .repl('{upload}', btnUpload)
-                .repl('{other}', otherButtons);
-        },
-        initPreview: function (isInit) {
-            var self = this, cap, out;
+        _initPreview: function (isInit) {
+            var self = this, cap = self.initialCaption || '', out;
             if (!previewCache.count(self.id)) {
-                self.$preview.html('');
-                self.setCaption('');
+                self._clearPreview();
+                if (isInit) {
+                    self._setCaption(cap);
+                } else {
+                    self._initCaption();
+                }
                 return;
             }
             out = previewCache.out(self.id);
             cap = isInit && self.initialCaption ? self.initialCaption : out.caption;
             self.$preview.html(out.content);
-            self.setCaption(cap);
+            self._setCaption(cap);
             if (!isEmpty(out.content)) {
                 self.$container.removeClass('file-input-new');
             }
         },
-        initPreviewDeletes: function () {
+        _initPreviewDeletes: function () {
             var self = this, deleteExtraData = self.deleteExtraData || {},
                 resetProgress = function () {
-                    if (self.$preview.find('.kv-file-remove').length === 0) {
+                    var hasFiles = self.isUploadable ? previewCache.count(self.id) : self.$element.get(0).files.length;
+                    if (self.$preview.find('.kv-file-remove').length === 0 && !hasFiles) {
                         self.reset();
+                        self.initialCaption = '';
                     }
                 };
+
             self.$preview.find('.kv-file-remove').each(function () {
-                var $el = $(this), $frame = $el.closest('.file-preview-frame'),
-                    cache = previewCache.data[self.id], index, config, extraData,
-                    vUrl = $el.data('url') || self.deleteUrl, vKey = $el.data('key'), settings,
-                    params = {id: $el.attr('id'), key: vKey, extra: extraData};
+                var $el = $(this), vUrl = $el.data('url') || self.deleteUrl, vKey = $el.data('key');
+                if (isEmpty(vUrl) || vKey === undefined) {
+                    return;
+                }
+                var $frame = $el.closest('.file-preview-frame'), cache = previewCache.data[self.id],
+                    settings, params, index = $frame.data('fileindex'), config, extraData;
+                index = parseInt(index.replace('init_', ''));
+                config = isEmpty(cache.config) && isEmpty(cache.config[index]) ? null : cache.config[index];
+                extraData = isEmpty(config) || isEmpty(config.extra) ? deleteExtraData : config.extra;
                 if (typeof extraData === "function") {
                     extraData = extraData();
                 }
-                if (vUrl === undefined || vKey === undefined) {
-                    return;
-                }
-                settings = $.extend({
+                params = {id: $el.attr('id'), key: vKey, extra: extraData};
+                settings = $.extend(true, {}, {
                     url: vUrl,
-                    type: 'DELETE',
+                    type: 'POST',
                     dataType: 'json',
-                    data: $.extend({key: vKey}, extraData),
+                    data: $.extend(true, {}, {key: vKey}, extraData),
                     beforeSend: function (jqXHR) {
-                        addCss($frame, 'file-uploading');
-                        addCss($el, 'disabled');
-                        self.raise('filepredelete', [vKey, jqXHR, extraData]);
+                        self.ajaxAborted = false;
+                        self._raise('filepredelete', [vKey, jqXHR, extraData]);
+                        if (self.ajaxAborted) {
+                            jqXHR.abort();
+                        } else {
+                            addCss($frame, 'file-uploading');
+                            addCss($el, 'disabled');
+                        }
                     },
                     success: function (data, textStatus, jqXHR) {
-                        index = parseInt($frame.data('fileindex').replace('init_', ''));
-                        config = isEmpty(cache.config) && isEmpty(cache.config[index]) ? null : cache.config[index];
-                        extraData = isEmpty(config) || isEmpty(config.extra) ? deleteExtraData : config.extra;
-                        if (data === undefined || data.error === undefined) {
+                        var n, cap;
+                        if (isEmpty(data) || isEmpty(data.error)) {
                             previewCache.unset(self.id, index);
-                            self.raise('filedeleted', [vKey, jqXHR, extraData]);
+                            n = previewCache.count(self.id);
+                            cap = n > 0 ? self._getMsgSelected(n) : '';
+                            self._raise('filedeleted', [vKey, jqXHR, extraData]);
+                            self._setCaption(cap);
                         } else {
                             params.jqXHR = jqXHR;
                             params.response = data;
-                            self.showError(data.error, params, 'filedeleteerror');
+                            self._showError(data.error, params, 'filedeleteerror');
                             $frame.removeClass('file-uploading');
                             $el.removeClass('disabled');
                             resetProgress();
@@ -17850,29 +18585,33 @@ else if ( jQuery ) {
                         }
                         $frame.removeClass('file-uploading').addClass('file-deleted');
                         $frame.fadeOut('slow', function () {
-                            self.clearObjects($frame);
+                            self._clearObjects($frame);
                             $frame.remove();
                             resetProgress();
-                            if (!previewCache.count(self.id) && self.getFileStack().length === 0) {
+                            if (!n && self.getFileStack().length === 0) {
+                                self._setCaption('');
                                 self.reset();
                             }
                         });
                     },
                     error: function (jqXHR, textStatus, errorThrown) {
-                        var errMsg = self.parseError(jqXHR, errorThrown);
+                        var errMsg = self._parseError(jqXHR, errorThrown);
                         params.jqXHR = jqXHR;
                         params.response = {};
-                        self.showError(errMsg, params, 'filedeleteerror');
+                        self._showError(errMsg, params, 'filedeleteerror');
                         $frame.removeClass('file-uploading');
                         resetProgress();
                     }
                 }, self.ajaxDeleteSettings);
-                $el.off('click').on('click', function () {
+                handler($el, 'click', function () {
+                    if (!self._validateMinCount()) {
+                        return false;
+                    }
                     $.ajax(settings);
                 });
             });
         },
-        clearObjects: function ($el) {
+        _clearObjects: function ($el) {
             $el.find('video audio').each(function () {
                 this.pause();
                 $(this).remove();
@@ -17881,14 +18620,13 @@ else if ( jQuery ) {
                 $(this).remove();
             });
         },
-        clearFileInput: function () {
+        _clearFileInput: function () {
             var self = this, $el = self.$element, $srcFrm, $tmpFrm, $tmpEl;
             if (isEmpty($el.val())) {
                 return;
             }
-            // Fix for IE ver < 11, that does not clear file inputs
-            // Requires a sequence of steps to prevent IE crashing but
-            // still allow clearing of the file input.
+            // Fix for IE ver < 11, that does not clear file inputs. Requires a sequence of steps to prevent IE
+            // crashing but still allow clearing of the file input.
             if (self.isIE9 || self.isIE10) {
                 $srcFrm = $el.closest('form');
                 $tmpFrm = $(document.createElement('form'));
@@ -17907,151 +18645,145 @@ else if ( jQuery ) {
             }
             self.fileInputCleared = true;
         },
-        resetUpload: function () {
+        _resetUpload: function () {
             var self = this;
             self.uploadCache = {content: [], config: [], tags: [], append: true};
             self.uploadCount = 0;
-            self.uploadPercent = 0;
+            self.uploadStatus = {};
+            self.uploadLog = [];
+            self.uploadAsyncCount = 0;
+            self.loadedImages = [];
+            self.totalImagesCount = 0;
             self.$btnUpload.removeAttr('disabled');
-            self.setProgress(0);
+            self._setProgress(0);
             addCss(self.$progress, 'hide');
-            self.resetErrors(false);
-            self.uploadAborted = false;
+            self._resetErrors(false);
+            self.ajaxAborted = false;
             self.ajaxRequests = [];
+            self._resetCanvas();
         },
-        cancel: function () {
-            var self = this, xhr = self.ajaxRequests, len = xhr.length, i;
-            if (len > 0) {
-                for (i = 0; i < len; i += 1) {
-                    xhr[i].abort();
-                }
+        _resetCanvas: function () {
+            var self = this;
+            if (self.canvas && self.imageCanvasContext) {
+                self.imageCanvasContext.clearRect(0, 0, self.canvas.width, self.canvas.height);
             }
-            self.$preview.find(PREVIEW_FRAMES).each(function () {
-                var $thumb = $(this), ind = $thumb.attr('data-fileindex');
-                $thumb.removeClass('file-uploading');
-                if (self.filestack[ind] !== undefined) {
-                    $thumb.find('.kv-file-upload').removeClass('disabled').removeAttr('disabled');
-                    $thumb.find('.kv-file-remove').removeClass('disabled').removeAttr('disabled');
-                }
-                self.unlock();
-            });
         },
-        clear: function () {
-            var self = this, cap;
-            self.$btnUpload.removeAttr('disabled');
-            self.resetUpload();
-            self.filestack = [];
-            self.clearFileInput();
-            self.resetErrors(true);
-            self.raise('fileclear');
-            if (!self.overwriteInitial && previewCache.count(self.id)) {
-                self.showFileIcon();
-                self.resetPreview();
-                self.setEllipsis();
-                self.initPreviewDeletes();
-                self.$container.removeClass('file-input-new');
-            } else {
-                self.$preview.find(PREVIEW_FRAMES).each(function () {
-                    self.clearObjects($(this));
-                });
-                self.$preview.html('');
-                cap = (!self.overwriteInitial && self.initialCaption.length > 0) ? self.initialCaption : '';
-                self.$caption.html(cap);
-                self.setEllipsis();
-                self.$caption.attr('title', '');
-                addCss(self.$container, 'file-input-new');
-            }
-            if (self.$container.find('.file-preview-frame').length === 0) {
-                self.initialCaption = '';
-                self.$caption.html('');
-                self.setEllipsis();
-                self.$captionContainer.find('.kv-caption-icon').hide();
-            }
-            self.hideFileIcon();
-            self.raise('filecleared');
-            self.$captionContainer.focus();
-            self.setFileDropZoneTitle();
+        _hasInitialPreview: function () {
+            var self = this;
+            return !self.overwriteInitial && previewCache.count(self.id);
         },
-        resetPreview: function () {
-            var self = this, out;
+        _resetPreview: function () {
+            var self = this, out, cap;
             if (previewCache.count(self.id)) {
                 out = previewCache.out(self.id);
                 self.$preview.html(out.content);
-                self.setCaption(out.caption);
+                cap = self.initialCaption ? self.initialCaption : out.caption;
+                self._setCaption(cap);
             } else {
-                self.$preview.html('');
-                self.$caption.html('');
+                self._clearPreview();
+                self._initCaption();
             }
         },
-        reset: function () {
+        _clearDefaultPreview: function () {
             var self = this;
-            self.clear();
-            self.resetPreview();
-            self.setEllipsis();
-            self.$container.find('.fileinput-filename').text('');
-            self.raise('filereset');
-            if (self.initialPreview.length > 0) {
-                self.$container.removeClass('file-input-new');
+            self.$preview.find('.file-default-preview').remove();
+        },
+        _validateDefaultPreview: function () {
+            var self = this;
+            if (!self.showPreview || isEmpty(self.defaultPreviewContent)) {
+                return;
             }
-            self.setFileDropZoneTitle();
-            self.filestack = [];
-            self.formdata = {};
+            self.$preview.html('<div class="file-default-preview">' + self.defaultPreviewContent + '</div>');
+            self.$container.removeClass('file-input-new');
         },
-        disable: function () {
+        _resetPreviewThumbs: function (isAjax) {
+            var self = this, out;
+            if (isAjax) {
+                self._clearPreview();
+                self.clearStack();
+                return;
+            }
+            if (self._hasInitialPreview()) {
+                out = previewCache.out(self.id);
+                self.$preview.html(out.content);
+                self._setCaption(out.caption);
+                self._initPreviewDeletes();
+            } else {
+                self._clearPreview();
+            }
+        },
+        _getLayoutTemplate: function (t) {
+            var self = this,
+                template = isSet(t, self.layoutTemplates) ? self.layoutTemplates[t] : defaultLayoutTemplates[t];
+            if (isEmpty(self.customLayoutTags)) {
+                return template;
+            }
+            return replaceTags(template, self.customLayoutTags);
+        },
+        _getPreviewTemplate: function (t) {
+            var self = this,
+                template = isSet(t, self.previewTemplates) ? self.previewTemplates[t] : defaultPreviewTemplates[t];
+            if (isEmpty(self.customPreviewTags)) {
+                return template;
+            }
+            return replaceTags(template, self.customPreviewTags);
+        },
+        _getOutData: function (jqXHR, responseData, filesData) {
             var self = this;
-            self.isDisabled = true;
-            self.raise('filedisabled');
-            self.$element.attr('disabled', 'disabled');
-            self.$container.find(".kv-fileinput-caption").addClass("file-caption-disabled");
-            self.$container.find(".btn-file, .fileinput-remove, .kv-fileinput-upload").attr("disabled", true);
-            self.initDragDrop();
+            jqXHR = jqXHR || {};
+            responseData = responseData || {};
+            filesData = filesData || self.filestack.slice(0) || {};
+            return {
+                form: self.formdata,
+                files: filesData,
+                filenames: self.filenames,
+                extra: self._getExtraData(),
+                response: responseData,
+                reader: self.reader,
+                jqXHR: jqXHR
+            };
         },
-        enable: function () {
-            var self = this;
-            self.isDisabled = false;
-            self.raise('fileenabled');
-            self.$element.removeAttr('disabled');
-            self.$container.find(".kv-fileinput-caption").removeClass("file-caption-disabled");
-            self.$container.find(".btn-file, .fileinput-remove, .kv-fileinput-upload").removeAttr("disabled");
-            self.initDragDrop();
+        _getMsgSelected: function (n) {
+            var self = this, strFiles = n === 1 ? self.fileSingle : self.filePlural;
+            return self.msgSelected.replace('{n}', n).replace('{files}', strFiles);
         },
-        getExtraData: function () {
+        _getThumbs: function (css) {
+            css = css || '';
+            return this.$preview.find('.file-preview-frame:not(.file-preview-initial)' + css);
+        },
+        _getExtraData: function (previewId, index) {
             var self = this, data = self.uploadExtraData;
             if (typeof self.uploadExtraData === "function") {
-                data = self.uploadExtraData();
+                data = self.uploadExtraData(previewId, index);
             }
             return data;
         },
-        uploadExtra: function () {
-            var self = this, data = self.getExtraData();
-            if (data.length === 0) {
-                return;
-            }
-            $.each(data, function (key, value) {
-                self.formdata.append(key, value);
-            });
-        },
-        initXhr: function (xhrobj, factor) {
+        _initXhr: function (xhrobj, previewId, fileCount) {
             var self = this;
             if (xhrobj.upload) {
                 xhrobj.upload.addEventListener('progress', function (event) {
                     var pct = 0, position = event.loaded || event.position, total = event.total;
+                    /** @namespace event.lengthComputable */
                     if (event.lengthComputable) {
-                        pct = Math.ceil(position / total * factor);
+                        pct = Math.ceil(position / total * 100);
                     }
-                    self.uploadPercent = Math.max(pct, self.uploadPercent);
-                    self.setProgress(self.uploadPercent);
+                    if (previewId) {
+                        self._setAsyncUploadStatus(previewId, pct, fileCount);
+                    } else {
+                        self._setProgress(Math.ceil(pct));
+                    }
                 }, false);
             }
             return xhrobj;
         },
-        ajaxSubmit: function (fnBefore, fnSuccess, fnComplete, fnError) {
+        _ajaxSubmit: function (fnBefore, fnSuccess, fnComplete, fnError, previewId, index) {
             var self = this, settings;
-            self.uploadExtra();
-            settings = $.extend({
+            self._raise('filepreajax', [previewId, index]);
+            self._uploadExtra(previewId, index);
+            settings = $.extend(true, {}, {
                 xhr: function () {
                     var xhrobj = $.ajaxSettings.xhr();
-                    return self.initXhr(xhrobj, 98);
+                    return self._initXhr(xhrobj, previewId, self.getFileStack().length);
                 },
                 url: self.uploadUrl,
                 type: 'POST',
@@ -18067,9 +18799,9 @@ else if ( jQuery ) {
             }, self.ajaxSettings);
             self.ajaxRequests.push($.ajax(settings));
         },
-        initUploadSuccess: function (out, $thumb, allFiles) {
-            var self = this, append, data, index, $newThumb, content, config, tags;
-            if (typeof out !== 'object' || $.isEmptyObject(out)) {
+        _initUploadSuccess: function (out, $thumb, allFiles) {
+            var self = this, append, data, index, $newThumb, content, config, tags, i;
+            if (!self.showPreview || typeof out !== 'object' || $.isEmptyObject(out)) {
                 return;
             }
             if (out.initialPreview !== undefined && out.initialPreview.length > 0) {
@@ -18079,487 +18811,532 @@ else if ( jQuery ) {
                 tags = out.initialPreviewThumbTags || [];
                 append = out.append === undefined || out.append ? true : false;
                 self.overwriteInitial = false;
-                if ($thumb !== undefined && !!allFiles) {
-                    index = previewCache.add(self.id, content, config[0], tags[0], append);
-                    data = previewCache.get(self.id, index, false);
-                    $newThumb = $(data).hide();
-                    $thumb.after($newThumb).fadeOut('slow', function () {
-                        $newThumb.fadeIn('slow').css('display:inline-block');
-                        self.initPreviewDeletes();
-                    });
-                } else {
-                    if (allFiles) {
-                        self.uploadCache.content.push(content[0]);
-                        self.uploadCache.config.push(config[0]);
-                        self.uploadCache.tags.push(tags[0]);
-                        self.uploadCache.append = append;
+                if ($thumb !== undefined) {
+                    if (!allFiles) {
+                        index = previewCache.add(self.id, content, config[0], tags[0], append);
+                        data = previewCache.get(self.id, index, false);
+                        $newThumb = $(data).hide();
+                        $thumb.after($newThumb).fadeOut('slow', function () {
+                            $newThumb.fadeIn('slow').css('display:inline-block');
+                            self._initPreviewDeletes();
+                            self._clearFileInput();
+                            $thumb.remove();
+                        });
                     } else {
-                        previewCache.set(self.id, content, config, tags, append);
-                        self.initPreview();
-                        self.initPreviewDeletes();
+                        i = $thumb.attr('data-fileindex');
+                        self.uploadCache.content[i] = content[0];
+                        self.uploadCache.config[i] = config[0];
+                        self.uploadCache.tags[i] = tags[0];
+                        self.uploadCache.append = append;
                     }
+                } else {
+                    previewCache.set(self.id, content, config, tags, append);
+                    self._initPreview();
+                    self._initPreviewDeletes();
                 }
             }
         },
-        uploadSingle: function (i, files, allFiles) {
-            var self = this, total = self.getFileStack().length, formdata = new FormData(), outData,
-                previewId = self.previewInitId + "-" + i, $thumb = $('#' + previewId + ':not(.file-preview-initial)'),
-                pct, chkComplete, $btnUpload = $thumb.find('.kv-file-upload'), $btnDelete = $thumb.find('.kv-file-remove'),
-                $indicator = $thumb.find('.file-upload-indicator'), config = self.fileActionSettings,
-                hasPostData = self.filestack.length > 0 || !$.isEmptyObject(self.uploadExtraData),
-                setIndicator, updateProgress, resetActions, fnBefore, fnSuccess, fnComplete, fnError,
-                params = {id: previewId, index: i};
-            self.formdata = formdata;
-            if (total === 0 || !hasPostData || $btnUpload.hasClass('disabled') || self.abort(params)) {
+        _initSuccessThumbs: function () {
+            var self = this;
+            if (!self.showPreview) {
                 return;
             }
+            self._getThumbs('.file-preview-success').each(function () {
+                var $thumb = $(this), $remove = $thumb.find('.kv-file-remove');
+                $remove.removeAttr('disabled');
+                handler($remove, 'click', function () {
+                    var out = self._raise('filesuccessremove', [$thumb.attr('id'), $thumb.data('fileindex')]);
+                    cleanMemory($thumb);
+                    if (out === false) {
+                        return;
+                    }
+                    $thumb.fadeOut('slow', function () {
+                        $thumb.remove();
+                        if (!self.$preview.find('.file-preview-frame').length) {
+                            self.reset();
+                        }
+                    });
+                });
+            });
+        },
+        _checkAsyncComplete: function () {
+            var self = this, previewId, i;
+            for (i = 0; i < self.filestack.length; i++) {
+                if (self.filestack[i]) {
+                    previewId = self.previewInitId + "-" + i;
+                    if ($.inArray(previewId, self.uploadLog) === -1) {
+                        return false;
+                    }
+                }
+            }
+            return (self.uploadAsyncCount === self.uploadLog.length);
+        },
+        _uploadExtra: function (previewId, index) {
+            var self = this, data = self._getExtraData(previewId, index);
+            if (data.length === 0) {
+                return;
+            }
+            $.each(data, function (key, value) {
+                self.formdata.append(key, value);
+            });
+        },
+        _uploadSingle: function (i, files, allFiles) {
+            var self = this, total = self.getFileStack().length, formdata = new FormData(), outData,
+                previewId = self.previewInitId + "-" + i, $thumb, chkComplete, $btnUpload, $btnDelete,
+                hasPostData = self.filestack.length > 0 || !$.isEmptyObject(self.uploadExtraData),
+                fnBefore, fnSuccess, fnComplete, fnError, updateUploadLog, params = {id: previewId, index: i};
+            self.formdata = formdata;
+            if (self.showPreview) {
+                $thumb = $('#' + previewId + ':not(.file-preview-initial)');
+                $btnUpload = $thumb.find('.kv-file-upload');
+                $btnDelete = $thumb.find('.kv-file-remove');
+                $('#' + previewId).find('.file-thumb-progress').removeClass('hide');
+            }
+            if (total === 0 || !hasPostData || ($btnUpload && $btnUpload.hasClass('disabled')) || self._abort(params)) {
+                return;
+            }
+            updateUploadLog = function (i, previewId) {
+                self.updateStack(i, undefined);
+                self.uploadLog.push(previewId);
+                if (self._checkAsyncComplete()) {
+                    self.fileBatchCompleted = true;
+                }
+            };
             chkComplete = function () {
-                var $thumbs = self.$preview.find(PREVIEW_FRAMES + '.file-uploading');
-                if ($thumbs.length > 0 && self.fileBatchCompleted) {
+                if (!self.fileBatchCompleted) {
                     return;
                 }
-                previewCache.set(self.id, self.uploadCache.content, self.uploadCache.config, self.uploadCache.tags,
-                    self.uploadCache.append);
-                if (self.hasInitData) {
-                    self.initPreview();
-                    self.initPreviewDeletes();
-                }
-                self.setProgress(100);
-                self.unlock();
-                self.clearFileInput();
-                self.raise('filebatchuploadcomplete', [self.filestack, self.getExtraData()]);
-                self.fileBatchCompleted = true;
-            };
-            setIndicator = function (icon, msg) {
-                $indicator.html(config[icon]);
-                $indicator.attr('title', config[msg]);
-            };
-            updateProgress = function () {
-                if (!allFiles || total === 0 || self.uploadPercent >= 100) {
-                    return;
-                }
-                self.uploadCount += 1;
-                pct = 80 + Math.ceil(self.uploadCount * 20 / total);
-                self.uploadPercent = Math.max(pct, self.uploadPercent);
-                self.setProgress(self.uploadPercent);
-                self.initPreviewDeletes();
-            };
-            resetActions = function () {
-                $btnUpload.removeAttr('disabled');
-                $btnDelete.removeAttr('disabled');
-                $thumb.removeClass('file-uploading');
+                setTimeout(function () {
+                    if (self.showPreview) {
+                        previewCache.set(
+                            self.id,
+                            self.uploadCache.content,
+                            self.uploadCache.config,
+                            self.uploadCache.tags,
+                            self.uploadCache.append
+                        );
+                        if (self.hasInitData) {
+                            self._initPreview();
+                            self._initPreviewDeletes();
+                        }
+                    }
+                    self.unlock();
+                    self._clearFileInput();
+                    self._raise('filebatchuploadcomplete', [self.filestack, self._getExtraData()]);
+                    self.uploadCount = 0;
+                    self.uploadStatus = {};
+                    self.uploadLog = [];
+                    self._setProgress(100);
+                }, 100);
             };
             fnBefore = function (jqXHR) {
-                outData = self.getOutData(jqXHR);
-                setIndicator('indicatorLoading', 'indicatorLoadingTitle');
-                addCss($thumb, 'file-uploading');
-                $btnUpload.attr('disabled', true);
-                $btnDelete.attr('disabled', true);
+                outData = self._getOutData(jqXHR);
+                self.fileBatchCompleted = false;
+                if (self.showPreview) {
+                    if (!$thumb.hasClass('file-preview-success')) {
+                        self._setThumbStatus($thumb, 'Loading');
+                        addCss($thumb, 'file-uploading');
+                    }
+                    $btnUpload.attr('disabled', true);
+                    $btnDelete.attr('disabled', true);
+                }
                 if (!allFiles) {
                     self.lock();
                 }
-                self.raise('filepreupload', [outData, previewId, i]);
-                params = $.extend(params, outData);
-                if (self.abort(params)) {
+                self._raise('filepreupload', [outData, previewId, i]);
+                $.extend(true, params, outData);
+                if (self._abort(params)) {
                     jqXHR.abort();
-                    self.setProgress(100);
+                    self._setProgressCancelled();
                 }
             };
             fnSuccess = function (data, textStatus, jqXHR) {
-                outData = self.getOutData(jqXHR, data);
-                params = $.extend(params, outData);
+                outData = self._getOutData(jqXHR, data);
+                $.extend(true, params, outData);
                 setTimeout(function () {
-                    if (data.error === undefined) {
-                        setIndicator('indicatorSuccess', 'indicatorSuccessTitle');
-                        $btnUpload.hide();
-                        $btnDelete.hide();
-                        self.filestack[i] = undefined;
-                        self.raise('fileuploaded', [outData, previewId, i]);
-                        self.initUploadSuccess(data, $thumb, allFiles);
+                    if (isEmpty(data) || isEmpty(data.error)) {
+                        if (self.showPreview) {
+                            self._setThumbStatus($thumb, 'Success');
+                            $btnUpload.hide();
+                            self._initUploadSuccess(data, $thumb, allFiles);
+                        }
+                        self._raise('fileuploaded', [outData, previewId, i]);
                         if (!allFiles) {
-                            self.resetFileStack();
+                            self.updateStack(i, undefined);
+                        } else {
+                            updateUploadLog(i, previewId);
                         }
                     } else {
-                        setIndicator('indicatorError', 'indicatorErrorTitle');
-                        self.showUploadError(data.error, params);
+                        self._showUploadError(data.error, params);
+                        self._setPreviewError($thumb, i);
+                        if (allFiles) {
+                            updateUploadLog(i, previewId);
+                        }
                     }
                 }, 100);
             };
             fnComplete = function () {
                 setTimeout(function () {
-                    updateProgress();
-                    resetActions();
+                    if (self.showPreview) {
+                        $btnUpload.removeAttr('disabled');
+                        $btnDelete.removeAttr('disabled');
+                        $thumb.removeClass('file-uploading');
+                    }
                     if (!allFiles) {
                         self.unlock(false);
+                        self._clearFileInput();
                     } else {
-                        setTimeout(function () {
-                            chkComplete();
-                        }, 500);
+                        chkComplete();
                     }
+                    self._initSuccessThumbs();
                 }, 100);
             };
             fnError = function (jqXHR, textStatus, errorThrown) {
-                var errMsg = self.parseError(jqXHR, errorThrown, (allFiles ? files[i].name : null));
-                setIndicator('indicatorError', 'indicatorErrorTitle');
-                params = $.extend(params, self.getOutData(jqXHR));
-                self.showUploadError(errMsg, params);
+                var errMsg = self._parseError(jqXHR, errorThrown, (allFiles ? files[i].name : null));
+                setTimeout(function () {
+                    if (allFiles) {
+                        updateUploadLog(i, previewId);
+                    }
+                    self.uploadStatus[previewId] = 100;
+                    self._setPreviewError($thumb, i);
+                    $.extend(true, params, self._getOutData(jqXHR));
+                    self._showUploadError(errMsg, params);
+                }, 100);
             };
-            formdata.append(self.uploadFileAttr, files[i]);
+            formdata.append(self.uploadFileAttr, files[i], self.filenames[i]);
             formdata.append('file_id', i);
-            self.ajaxSubmit(fnBefore, fnSuccess, fnComplete, fnError);
+            self._ajaxSubmit(fnBefore, fnSuccess, fnComplete, fnError, previewId, i);
         },
-        uploadBatch: function () {
-            var self = this, files = self.filestack, total = files.length, config,
-                hasPostData = self.filestack.length > 0 || !$.isEmptyObject(self.uploadExtraData),
-                setIndicator, setAllUploaded, enableActions, fnBefore, fnSuccess, fnComplete, fnError,
-                params = {};
+        _uploadBatch: function () {
+            var self = this, files = self.filestack, total = files.length, params = {}, fnBefore, fnSuccess, fnError,
+                fnComplete, hasPostData = self.filestack.length > 0 || !$.isEmptyObject(self.uploadExtraData),
+                setAllUploaded;
             self.formdata = new FormData();
-            if (total === 0 || !hasPostData || self.abort(params)) {
+            if (total === 0 || !hasPostData || self._abort(params)) {
                 return;
             }
-            config = self.fileActionSettings;
-            setIndicator = function (i, icon, msg) {
-                var $indicator = $('#' + self.previewInitId + "-" + i).find('.file-upload-indicator');
-                $indicator.html(config[icon]);
-                $indicator.attr('title', config[msg]);
-            };
-            enableActions = function (i) {
-                var $thumb = $('#' + self.previewInitId + "-" + i + ':not(.file-preview-initial)'),
-                    $btnUpload = $thumb.find('.kv-file-upload'),
-                    $btnDelete = $thumb.find('.kv-file-delete');
-                $thumb.removeClass('file-uploading');
-                $btnUpload.removeAttr('disabled');
-                $btnDelete.removeAttr('disabled');
-            };
             setAllUploaded = function () {
-                $.each(files, function (key, data) {
-                    self.filestack[key] = undefined;
+                $.each(files, function (key) {
+                    self.updateStack(key, undefined);
                 });
-                self.clearFileInput();
+                self._clearFileInput();
             };
             fnBefore = function (jqXHR) {
                 self.lock();
-                var outData = self.getOutData(jqXHR);
+                var outData = self._getOutData(jqXHR);
                 if (self.showPreview) {
-                    self.$preview.find(PREVIEW_FRAMES).each(function () {
-                        var $thumb = $(this), $btnUpload = $thumb.find('.kv-file-upload'), $btnDelete = $thumb.find('.kv-file-remove');
-                        addCss($thumb, 'file-uploading');
+                    self._getThumbs().each(function () {
+                        var $thumb = $(this), $btnUpload = $thumb.find('.kv-file-upload'),
+                            $btnDelete = $thumb.find('.kv-file-remove');
+                        if (!$thumb.hasClass('file-preview-success')) {
+                            self._setThumbStatus($thumb, 'Loading');
+                            addCss($thumb, 'file-uploading');
+                        }
                         $btnUpload.attr('disabled', true);
                         $btnDelete.attr('disabled', true);
                     });
                 }
-                self.raise('filebatchpreupload', [outData]);
-                if (self.abort(outData)) {
+                self._raise('filebatchpreupload', [outData]);
+                if (self._abort(outData)) {
                     jqXHR.abort();
+                    self._setProgressCancelled();
                 }
             };
             fnSuccess = function (data, textStatus, jqXHR) {
-                var outData = self.getOutData(jqXHR, data),
-                    keys = isEmpty(data.errorkeys) ? [] : data.errorkeys;
-                if (data.error === undefined || isEmpty(data.error)) {
-                    self.raise('filebatchuploadsuccess', [outData]);
+                /** @namespace data.errorkeys */
+                var outData = self._getOutData(jqXHR, data), $thumbs = self._getThumbs(), key = 0,
+                    keys = isEmpty(data) || isEmpty(data.errorkeys) ? [] : data.errorkeys;
+                if (isEmpty(data) || isEmpty(data.error)) {
+                    self._raise('filebatchuploadsuccess', [outData]);
                     setAllUploaded();
                     if (self.showPreview) {
-                        self.$preview.find('.kv-file-upload').hide();
-                        self.$preview.find('.kv-file-remove').hide();
-                        self.$preview.find(PREVIEW_FRAMES).each(function () {
-                            var $thumb = $(this), key = $thumb.attr('data-fileindex');
-                            setIndicator(key, 'indicatorSuccess', 'indicatorSuccessTitle');
-                            enableActions(key);
+                        $thumbs.each(function () {
+                            var $thumb = $(this), $btnUpload = $thumb.find('.kv-file-upload');
+                            $thumb.find('.kv-file-upload').hide();
+                            self._setThumbStatus($thumb, 'Success');
+                            $thumb.removeClass('file-uploading');
+                            $btnUpload.removeAttr('disabled');
                         });
-                        self.initUploadSuccess(data);
+                        self._initUploadSuccess(data);
                     } else {
                         self.reset();
                     }
                 } else {
                     if (self.showPreview) {
-                        self.$preview.find(PREVIEW_FRAMES).each(function () {
-                            var $thumb = $(this), key = parseInt($thumb.attr('data-fileindex'), 10);
-                            enableActions(key);
+                        $thumbs.each(function () {
+                            var $thumb = $(this), $btnDelete = $thumb.find('.kv-file-remove'),
+                                $btnUpload = $thumb.find('.kv-file-upload');
+                            $thumb.removeClass('file-uploading');
+                            $btnUpload.removeAttr('disabled');
+                            $btnDelete.removeAttr('disabled');
                             if (keys.length === 0) {
-                                setIndicator(key, 'indicatorError', 'indicatorErrorTitle');
+                                self._setPreviewError($thumb);
                                 return;
                             }
                             if ($.inArray(key, keys) !== -1) {
-                                setIndicator(key, 'indicatorError', 'indicatorErrorTitle');
+                                self._setPreviewError($thumb);
                             } else {
                                 $thumb.find('.kv-file-upload').hide();
-                                $thumb.find('.kv-file-remove').hide();
-                                setIndicator(key, 'indicatorSuccess', 'indicatorSuccessTitle');
-                                self.filestack[key] = undefined;
+                                self._setThumbStatus($thumb, 'Success');
+                                self.updateStack(key, undefined);
                             }
+                            key++;
                         });
-                        self.initUploadSuccess(data);
+                        self._initUploadSuccess(data);
                     }
-                    self.showUploadError(data.error, outData, 'filebatchuploaderror');
+                    self._showUploadError(data.error, outData, 'filebatchuploaderror');
                 }
             };
             fnComplete = function () {
-                self.setProgress(100);
+                self._setProgress(100);
                 self.unlock();
-                self.raise('filebatchuploadcomplete', [self.filestack, self.getExtraData()]);
-                self.clearFileInput();
+                self._initSuccessThumbs();
+                self._clearFileInput();
+                self._raise('filebatchuploadcomplete', [self.filestack, self._getExtraData()]);
             };
             fnError = function (jqXHR, textStatus, errorThrown) {
-                var outData = self.getOutData(jqXHR), errMsg = self.parseError(jqXHR, errorThrown);
-                self.showUploadError(errMsg, outData, 'filebatchuploaderror');
+                var outData = self._getOutData(jqXHR), errMsg = self._parseError(jqXHR, errorThrown);
+                self._showUploadError(errMsg, outData, 'filebatchuploaderror');
                 self.uploadFileCount = total - 1;
                 if (!self.showPreview) {
                     return;
                 }
-                self.$preview.find(PREVIEW_FRAMES).each(function () {
+                self._getThumbs().each(function () {
                     var $thumb = $(this), key = $thumb.attr('data-fileindex');
                     $thumb.removeClass('file-uploading');
                     if (self.filestack[key] !== undefined) {
-                        setIndicator(key, 'indicatorError', 'indicatorErrorTitle');
+                        self._setPreviewError($thumb);
                     }
                 });
-                self.$preview.find(PREVIEW_FRAMES).removeClass('file-uploading');
-                self.$preview.find(PREVIEW_FRAMES + ' .kv-file-upload').removeAttr('disabled');
-                self.$preview.find(PREVIEW_FRAMES + ' .kv-file-delete').removeAttr('disabled');
+                self._getThumbs().removeClass('file-uploading');
+                self._getThumbs(' .kv-file-upload').removeAttr('disabled');
+                self._getThumbs(' .kv-file-delete').removeAttr('disabled');
             };
             $.each(files, function (key, data) {
                 if (!isEmpty(files[key])) {
-                    self.formdata.append(self.uploadFileAttr, data);
+                    self.formdata.append(self.uploadFileAttr, data, self.filenames[key]);
                 }
             });
-            self.ajaxSubmit(fnBefore, fnSuccess, fnComplete, fnError);
+            self._ajaxSubmit(fnBefore, fnSuccess, fnComplete, fnError);
         },
-        uploadExtraOnly: function () {
+        _uploadExtraOnly: function () {
             var self = this, params = {}, fnBefore, fnSuccess, fnComplete, fnError;
             self.formdata = new FormData();
-            if (self.abort(params)) {
+            if (self._abort(params)) {
                 return;
             }
             fnBefore = function (jqXHR) {
                 self.lock();
-                var outData = self.getOutData(jqXHR);
-                self.raise('filebatchpreupload', [outData]);
-                self.setProgress(50);
+                var outData = self._getOutData(jqXHR);
+                self._raise('filebatchpreupload', [outData]);
+                self._setProgress(50);
                 params.data = outData;
                 params.xhr = jqXHR;
-                if (self.abort(params)) {
+                if (self._abort(params)) {
                     jqXHR.abort();
-                    self.setProgress(100);
+                    self._setProgressCancelled();
                 }
             };
             fnSuccess = function (data, textStatus, jqXHR) {
-                var outData = self.getOutData(jqXHR, data);
-                if (data.error === undefined || isEmpty(data.error)) {
-                    self.raise('filebatchuploadsuccess', [outData]);
-                    self.clearFileInput();
-                    self.initUploadSuccess(data);
+                var outData = self._getOutData(jqXHR, data);
+                if (isEmpty(data) || isEmpty(data.error)) {
+                    self._raise('filebatchuploadsuccess', [outData]);
+                    self._clearFileInput();
+                    self._initUploadSuccess(data);
                 } else {
-                    self.showUploadError(data.error, outData, 'filebatchuploaderror');
+                    self._showUploadError(data.error, outData, 'filebatchuploaderror');
                 }
             };
             fnComplete = function () {
-                self.setProgress(100);
+                self._setProgress(100);
                 self.unlock();
-                self.raise('filebatchuploadcomplete', [self.filestack, self.getExtraData()]);
-                self.clearFileInput();
+                self._clearFileInput();
+                self._raise('filebatchuploadcomplete', [self.filestack, self._getExtraData()]);
             };
             fnError = function (jqXHR, textStatus, errorThrown) {
-                var outData = self.getOutData(jqXHR), errMsg = self.parseError(jqXHR, errorThrown);
+                var outData = self._getOutData(jqXHR), errMsg = self._parseError(jqXHR, errorThrown);
                 params.data = outData;
-                self.showUploadError(errMsg, outData, 'filebatchuploaderror');
+                self._showUploadError(errMsg, outData, 'filebatchuploaderror');
             };
-            self.ajaxSubmit(fnBefore, fnSuccess, fnComplete, fnError);
+            self._ajaxSubmit(fnBefore, fnSuccess, fnComplete, fnError);
         },
-        hideFileIcon: function () {
+        _initFileActions: function () {
+            var self = this;
+            if (!self.showPreview) {
+                return;
+            }
+            self.$preview.find('.kv-file-remove').each(function () {
+                var $el = $(this), $frame = $el.closest('.file-preview-frame'), hasError,
+                    id = $frame.attr('id'), ind = $frame.attr('data-fileindex'), n, cap, status;
+                handler($el, 'click', function () {
+                    status = self._raise('filepreremove', [id, ind]);
+                    if (status === false || !self._validateMinCount()) {
+                        return false;
+                    }
+                    hasError = $frame.hasClass('file-preview-error');
+                    cleanMemory($frame);
+                    $frame.fadeOut('slow', function () {
+                        self.updateStack(ind, undefined);
+                        self._clearObjects($frame);
+                        $frame.remove();
+                        if (id && hasError) {
+                            self.$errorContainer.find('li[data-file-id="' + id + '"]').fadeOut('fast', function () {
+                                $(this).remove();
+                                if (!self._errorsExist()) {
+                                    self._resetErrors();
+                                }
+                            });
+                        }
+                        var filestack = self.getFileStack(true), len = filestack.length, chk = previewCache.count(
+                            self.id),
+                            hasThumb = self.showPreview && self.$preview.find('.file-preview-frame').length;
+                        self._clearFileInput();
+                        if (len === 0 && chk === 0 && !hasThumb) {
+                            self.reset();
+                        } else {
+                            n = chk + len;
+                            cap = n > 1 ? self._getMsgSelected(n) : (filestack[0] ? self._getFileNames()[0] : '');
+                            self._setCaption(cap);
+                        }
+                        self._raise('fileremoved', [id, ind]);
+                    });
+                });
+            });
+            self.$preview.find('.kv-file-upload').each(function () {
+                var $el = $(this);
+                handler($el, 'click', function () {
+                    var $frame = $el.closest('.file-preview-frame'),
+                        ind = $frame.attr('data-fileindex');
+                    if (!$frame.hasClass('file-preview-error')) {
+                        self._uploadSingle(ind, self.filestack, false);
+                    }
+                });
+            });
+        },
+        _hideFileIcon: function () {
             if (this.overwriteInitial) {
                 this.$captionContainer.find('.kv-caption-icon').hide();
             }
         },
-        showFileIcon: function () {
+        _showFileIcon: function () {
             this.$captionContainer.find('.kv-caption-icon').show();
         },
-        resetErrors: function (fade) {
-            var self = this, $error = self.$errorContainer;
-            self.isError = false;
-            self.$container.removeClass('has-error');
-            $error.html('');
-            if (fade) {
-                $error.fadeOut('slow');
-            } else {
-                $error.hide();
-            }
-        },
-        showFolderError: function (folders) {
-            var self = this, $error = self.$errorContainer;
-            if (!folders) {
+        _previewDefault: function (file, previewId, isDisabled) {
+            if (!this.showPreview) {
                 return;
             }
-            $error.html(self.msgFoldersNotAllowed.repl('{n}', folders));
-            $error.fadeIn(800);
-            addCss(self.$container, 'has-error');
-            self.raise('filefoldererror', [folders]);
-        },
-        showUploadError: function (msg, params, event) {
-            var self = this, $error = self.$errorContainer, ev = event || 'fileuploaderror';
-            if ($error.find('ul').length === 0) {
-                $error.html('<ul><li>' + msg + '</li></ul>');
-            } else {
-                $error.find('ul').append('<li>' + msg + '</li>');
-            }
-            $error.fadeIn(800);
-            self.raise(ev, [params]);
-            addCss(self.$container, 'has-error');
-            return true;
-        },
-        showError: function (msg, params, event) {
-            var self = this, $error = self.$errorContainer, ev = event || 'fileerror';
-            params = params || {};
-            params.reader = self.reader;
-            $error.html(msg);
-            $error.fadeIn(800);
-            self.raise(ev, [params]);
-            if (!self.isUploadable) {
-                self.clearFileInput();
-            }
-            addCss(self.$container, 'has-error');
-            self.$btnUpload.attr('disabled', true);
-            return true;
-        },
-        errorHandler: function (evt, caption) {
-            var self = this, err = evt.target.error;
-            switch (err.code) {
-                case err.NOT_FOUND_ERR:
-                    self.showError(self.msgFileNotFound.repl('{name}', caption));
-                    break;
-                case err.SECURITY_ERR:
-                    self.showError(self.msgFileSecured.repl('{name}', caption));
-                    break;
-                case err.NOT_READABLE_ERR:
-                    self.showError(self.msgFileNotReadable.repl('{name}', caption));
-                    break;
-                case err.ABORT_ERR:
-                    self.showError(self.msgFilePreviewAborted.repl('{name}', caption));
-                    break;
-                default:
-                    self.showError(self.msgFilePreviewError.repl('{name}', caption));
-            }
-        },
-        parseFileType: function (file) {
-            var self = this, isValid, vType, cat, i;
-            for (i = 0; i < defaultPreviewTypes.length; i += 1) {
-                cat = defaultPreviewTypes[i];
-                isValid = isSet(cat, self.fileTypeSettings) ? self.fileTypeSettings[cat] : defaultFileTypeSettings[cat];
-                vType = isValid(file.type, file.name) ? cat : '';
-                if (!isEmpty(vType)) {
-                    return vType;
+            var self = this, frameClass = '', fname = file ? file.name : '',
+                /** @namespace objUrl.createObjectURL */
+                data = objUrl.createObjectURL(file), ind = previewId.slice(previewId.lastIndexOf('-') + 1),
+                config = self.previewSettings.other || defaultPreviewSettings.other,
+                footer = self._renderFileFooter(file.name, config.width),
+                previewOtherTemplate = self._parseFilePreviewIcon(self._getPreviewTemplate('other'), fname);
+            if (isDisabled === true) {
+                if (!self.isUploadable) {
+                    footer += '<div class="file-other-error" title="' + self.fileActionSettings.indicatorErrorTitle +
+                        '">' + self.fileActionSettings.indicatorError + '</div>';
                 }
             }
-            return 'other';
-        },
-        previewDefault: function (file, previewId, isDisabled) {
-            if (!this.showPreview) {
-                return;
-            }
-            var self = this, data = objUrl.createObjectURL(file), $obj = $('#' + previewId),
-                config = self.previewSettings.other,
-                footer = self.renderFileFooter(file.name, config.width),
-                previewOtherTemplate = self.getPreviewTemplate('other'),
-                ind = previewId.slice(previewId.lastIndexOf('-') + 1),
-                frameClass = '';
-            if (isDisabled === true) {
-                frameClass = ' btn disabled';
-                footer += '<div class="file-other-error text-danger"><i class="glyphicon glyphicon-exclamation-sign"></i></div>';
-            }
+            self._clearDefaultPreview();
             self.$preview.append("\n" + previewOtherTemplate
-                .repl('{previewId}', previewId)
-                .repl('{frameClass}', frameClass)
-                .repl('{fileindex}', ind)
-                .repl('{caption}', self.slug(file.name))
-                .repl('{width}', config.width)
-                .repl('{height}', config.height)
-                .repl('{type}', file.type)
-                .repl('{data}', data)
-                .repl('{footer}', footer));
-            $obj.on('load', function () {
-                objUrl.revokeObjectURL($obj.attr('data'));
-            });
+                    .replace(/\{previewId}/g, previewId)
+                    .replace(/\{frameClass}/g, frameClass)
+                    .replace(/\{fileindex}/g, ind)
+                    .replace(/\{caption}/g, self.slug(file.name))
+                    .replace(/\{width}/g, config.width)
+                    .replace(/\{height}/g, config.height)
+                    .replace(/\{type}/g, file.type)
+                    .replace(/\{data}/g, data)
+                    .replace(/\{footer}/g, footer));
+            if (isDisabled === true && self.isUploadable) {
+                self._setThumbStatus($('#' + previewId), 'Error');
+            }
         },
-        previewFile: function (file, theFile, previewId, data) {
+        _previewFile: function (i, file, theFile, previewId, data) {
             if (!this.showPreview) {
                 return;
             }
-            var self = this, cat = self.parseFileType(file), caption = self.slug(file.name), content, strText,
-                types = self.allowedPreviewTypes, mimes = self.allowedPreviewMimeTypes,
-                tmplt = self.getPreviewTemplate(cat),
+            var self = this, cat = self._parseFileType(file), fname = file ? file.name : '', caption = self.slug(fname),
+                content, strText, types = self.allowedPreviewTypes, mimes = self.allowedPreviewMimeTypes,
+                tmplt = self._getPreviewTemplate(cat), chkTypes = types && types.indexOf(cat) >= 0, id,
                 config = isSet(cat, self.previewSettings) ? self.previewSettings[cat] : defaultPreviewSettings[cat],
-                wrapLen = parseInt(self.wrapTextLength, 10), wrapInd = self.wrapIndicator,
-                chkTypes = types.indexOf(cat) >= 0, id, height,
-                chkMimes = isEmpty(mimes) || (!isEmpty(mimes) && isSet(file.type, mimes)),
-                footer = self.renderFileFooter(caption, config.width), modal = '',
+                chkMimes = mimes && mimes.indexOf(file.type) !== -1,
+                footer = self._renderFileFooter(caption, config.width), modal = '',
                 ind = previewId.slice(previewId.lastIndexOf('-') + 1);
-            if (chkTypes && chkMimes) {
+            if (chkTypes || chkMimes) {
+                tmplt = self._parseFilePreviewIcon(tmplt, fname.split('.').pop());
                 if (cat === 'text') {
                     strText = htmlEncode(theFile.target.result);
-                    objUrl.revokeObjectURL(data);
-                    if (strText.length > wrapLen) {
-                        id = 'text-' + uniqId();
-                        height = window.innerHeight * 0.75;
-                        modal = self.getLayoutTemplate('modal').repl('{id}', id)
-                            .repl('{title}', caption)
-                            .repl('{height}', height)
-                            .repl('{body}', strText);
-                        wrapInd = wrapInd
-                            .repl('{title}', caption)
-                            .repl('{dialog}', "$('#" + id + "').modal('show')");
-                        strText = strText.substring(0, (wrapLen - 1)) + wrapInd;
-                    }
-                    content = tmplt.repl('{previewId}', previewId).repl('{caption}', caption)
-                        .repl('{frameClass}', '')
-                        .repl('{type}', file.type).repl('{width}', config.width)
-                        .repl('{height}', config.height).repl('{data}', strText)
-                        .repl('{footer}', footer).repl('{fileindex}', ind) + modal;
+                    id = 'text-' + uniqId();
+                    content = tmplt.replace(/\{zoom}/g, self._getLayoutTemplate('zoom'));
+                    modal = self._getLayoutTemplate('modal').replace('{id}', id)
+                        .replace(/\{title}/g, caption)
+                        .replace(/\{body}/g, strText).replace(/\{heading}/g, self.msgZoomModalHeading);
+                    content = content.replace(/\{previewId}/g, previewId).replace(/\{caption}/g, caption)
+                            .replace(/\{width}/g, config.width).replace(/\{height}/g, config.height)
+                            .replace(/\{frameClass}/g, '').replace(/\{zoomInd}/g, self.zoomIndicator)
+                            .replace(/\{footer}/g, footer).replace(/\{fileindex}/g, ind)
+                            .replace(/\{type}/g, file.type).replace(/\{zoomTitle}/g, self.msgZoomTitle)
+                            .replace(/\{dialog}/g, "$('#" + id + "').modal('show')")
+                            .replace(/\{data}/g, strText) + modal;
                 } else {
-                    content = tmplt.repl('{previewId}', previewId).repl('{caption}', caption)
-                        .repl('{frameClass}', '')
-                        .repl('{type}', file.type).repl('{data}', data)
-                        .repl('{width}', config.width).repl('{height}', config.height)
-                        .repl('{footer}', footer).repl('{fileindex}', ind);
+                    content = tmplt.replace(/\{previewId}/g, previewId).replace(/\{caption}/g, caption)
+                        .replace(/\{frameClass}/g, '').replace(/\{type}/g, file.type).replace(/\{fileindex}/g, ind)
+                        .replace(/\{width}/g, config.width).replace(/\{height}/g, config.height)
+                        .replace(/\{footer}/g, footer).replace(/\{data}/g, data);
                 }
+                self._clearDefaultPreview();
                 self.$preview.append("\n" + content);
-                self.autoSizeImage(previewId);
+                self._validateImage(i, previewId, caption, file.type);
             } else {
-                self.previewDefault(file, previewId);
+                self._previewDefault(file, previewId);
             }
         },
-        slugDefault: function (text) {
-            return isEmpty(text) ? '' : text.split(/(\\|\/)/g).pop().replace(/[^\w\-.\\\/ ]+/g, '');
+        _slugDefault: function (text) {
+            return isEmpty(text) ? '' : String(text).replace(/[\-\[\]\/\{}:;#%=\(\)\*\+\?\\\^\$\|<>&"']/g, '_');
         },
-        getFileStack: function () {
-            var self = this;
-            return self.filestack.filter(function (n) {
-                return n !== undefined;
-            });
-        },
-        readFiles: function (files) {
+        _readFiles: function (files) {
             this.reader = new FileReader();
             var self = this, $el = self.$element, $preview = self.$preview, reader = self.reader,
                 $container = self.$previewContainer, $status = self.$previewStatus, msgLoading = self.msgLoading,
                 msgProgress = self.msgProgress, previewInitId = self.previewInitId, numFiles = files.length,
-                settings = self.fileTypeSettings, ctr = self.filestack.length,
+                settings = self.fileTypeSettings, ctr = self.filestack.length, readFile,
                 throwError = function (msg, file, previewId, index) {
-                    var p1 = $.extend(self.getOutData({}, {}, files), {id: previewId, index: index}),
+                    var p1 = $.extend(true, {}, self._getOutData({}, {}, files), {id: previewId, index: index}),
                         p2 = {id: previewId, index: index, file: file, files: files};
-                    self.previewDefault(file, previewId, true);
-                    return self.isUploadable ? self.showUploadError(msg, p1) : self.showError(msg, p2);
+                    self._previewDefault(file, previewId, true);
+                    if (self.isUploadable) {
+                        self.addToStack(undefined);
+                    }
+                    setTimeout(readFile(index + 1), 100);
+                    self._initFileActions();
+                    if (self.removeFromPreviewOnError) {
+                        $('#' + previewId).remove();
+                    }
+                    return self.isUploadable ? self._showUploadError(msg, p1) : self._showError(msg, p2);
                 };
 
-            function readFile(i) {
+            self.loadedImages = [];
+            self.totalImagesCount = 0;
+
+            $.each(files, function (key, file) {
+                var func = self.fileTypeSettings.image || defaultFileTypeSettings.image;
+                if (func && func(file.type)) {
+                    self.totalImagesCount++;
+                }
+            });
+
+            readFile = function (i) {
                 if (isEmpty($el.attr('multiple'))) {
                     numFiles = 1;
                 }
                 if (i >= numFiles) {
                     if (self.isUploadable && self.filestack.length > 0) {
-                        self.raise('filebatchselected', [self.getFileStack()]);
+                        self._raise('filebatchselected', [self.getFileStack()]);
                     } else {
-                        self.raise('filebatchselected', [files]);
+                        self._raise('filebatchselected', [files]);
                     }
-                    $container.removeClass('loading');
+                    $container.removeClass('file-thumb-loading');
                     $status.html('');
                     return;
                 }
@@ -18573,9 +19350,9 @@ else if ( jQuery ) {
                 }
                 fileSize = fileSize.toFixed(2);
                 if (self.maxFileSize > 0 && fileSize > self.maxFileSize) {
-                    msg = self.msgSizeTooLarge.repl('{name}', caption)
-                        .repl('{size}', fileSize)
-                        .repl('{maxSize}', self.maxFileSize);
+                    msg = self.msgSizeTooLarge.replace('{name}', caption)
+                        .replace('{size}', fileSize)
+                        .replace('{maxSize}', self.maxFileSize);
                     self.isError = throwError(msg, file, previewId, i);
                     return;
                 }
@@ -18587,56 +19364,53 @@ else if ( jQuery ) {
                         fileCount += isEmpty(chk) ? 0 : chk.length;
                     }
                     if (fileCount === 0) {
-                        msg = self.msgInvalidFileType.repl('{name}', caption).repl('{types}', strTypes);
+                        msg = self.msgInvalidFileType.replace('{name}', caption).replace('{types}', strTypes);
                         self.isError = throwError(msg, file, previewId, i);
                         return;
                     }
                 }
                 if (fileCount === 0 && !isEmpty(fileExt) && isArray(fileExt) && !isEmpty(fileExtExpr)) {
-                    chk = caption.match(fileExtExpr);
+                    chk = compare(caption, fileExtExpr);
                     fileCount += isEmpty(chk) ? 0 : chk.length;
                     if (fileCount === 0) {
-                        msg = self.msgInvalidFileExtension.repl('{name}', caption).repl('{extensions}',
+                        msg = self.msgInvalidFileExtension.replace('{name}', caption).replace('{extensions}',
                             strExt);
                         self.isError = throwError(msg, file, previewId, i);
                         return;
                     }
                 }
                 if (!self.showPreview) {
-                    self.filestack.push(file);
+                    self.addToStack(file);
                     setTimeout(readFile(i + 1), 100);
-                    self.raise('fileloaded', [file, previewId, i, reader]);
+                    self._raise('fileloaded', [file, previewId, i, reader]);
                     return;
                 }
                 if ($preview.length > 0 && FileReader !== undefined) {
-                    $status.html(msgLoading.repl('{index}', i + 1).repl('{files}', numFiles));
-                    $container.addClass('loading');
+                    $status.html(msgLoading.replace('{index}', i + 1).replace('{files}', numFiles));
+                    $container.addClass('file-thumb-loading');
                     reader.onerror = function (evt) {
-                        self.errorHandler(evt, caption);
+                        self._errorHandler(evt, caption);
                     };
                     reader.onload = function (theFile) {
-                        self.previewFile(file, theFile, previewId, previewData);
-                        self.initFileActions();
+                        self._previewFile(i, file, theFile, previewId, previewData);
+                        self._initFileActions();
                     };
                     reader.onloadend = function () {
                         msg = msgProgress
-                            .repl('{index}', i + 1).repl('{files}', numFiles)
-                            .repl('{percent}', 50).repl('{name}', caption);
+                            .replace('{index}', i + 1).replace('{files}', numFiles)
+                            .replace('{percent}', 50).replace('{name}', caption);
                         setTimeout(function () {
                             $status.html(msg);
-                            objUrl.revokeObjectURL(previewData);
-                        }, 100);
-                        setTimeout(function () {
+                            self._updateFileDetails(numFiles);
                             readFile(i + 1);
-                            self.updateFileDetails(numFiles);
                         }, 100);
-                        self.raise('fileloaded', [file, previewId, i, reader]);
+                        self._raise('fileloaded', [file, previewId, i, reader]);
                     };
                     reader.onprogress = function (data) {
                         if (data.lengthComputable) {
                             var fact = (data.loaded / data.total) * 100, progress = Math.ceil(fact);
-                            msg = msgProgress.repl('{index}', i + 1).repl('{files}', numFiles)
-                                .repl('{percent}', progress).repl('{name}', caption);
+                            msg = msgProgress.replace('{index}', i + 1).replace('{files}', numFiles)
+                                .replace('{percent}', progress).replace('{name}', caption);
                             setTimeout(function () {
                                 $status.html(msg);
                             }, 100);
@@ -18649,60 +19423,433 @@ else if ( jQuery ) {
                         reader.readAsArrayBuffer(file);
                     }
                 } else {
-                    self.previewDefault(file, previewId);
+                    self._previewDefault(file, previewId);
                     setTimeout(function () {
                         readFile(i + 1);
-                        self.updateFileDetails(numFiles);
+                        self._updateFileDetails(numFiles);
                     }, 100);
-                    self.raise('fileloaded', [file, previewId, i, reader]);
+                    self._raise('fileloaded', [file, previewId, i, reader]);
                 }
-                self.filestack.push(file);
-            }
+                self.addToStack(file);
+            };
 
             readFile(0);
-            self.updateFileDetails(numFiles, false);
+            self._updateFileDetails(numFiles, false);
         },
-        updateFileDetails: function (numFiles) {
-            var self = this, msgSelected = self.msgSelected, $el = self.$element, fileStack = self.getFileStack(),
-                name = $el.val() || (fileStack.length && fileStack[0].name) || '', label = self.slug(name),
-                n = self.isUploadable ? fileStack.length : numFiles,
-                nFiles = previewCache.count(self.id) + n,
-                log = n > 1 ? msgSelected.repl('{n}', nFiles) : label;
+        _updateFileDetails: function (numFiles) {
+            var self = this, $el = self.$element, fileStack = self.getFileStack(),
+                name = ($el[0].files[0] && $el[0].files[0].name) || (fileStack.length && fileStack[0].name) || '',
+                label = self.slug(name), n = self.isUploadable ? fileStack.length : numFiles,
+                nFiles = previewCache.count(self.id) + n, log = n > 1 ? self._getMsgSelected(nFiles) : label;
             if (self.isError) {
-                self.$previewContainer.removeClass('loading');
+                self.$previewContainer.removeClass('file-thumb-loading');
                 self.$previewStatus.html('');
                 self.$captionContainer.find('.kv-caption-icon').hide();
             } else {
-                self.showFileIcon();
+                self._showFileIcon();
             }
-            self.setCaption(log, self.isError);
+            self._setCaption(log, self.isError);
             self.$container.removeClass('file-input-new file-input-ajax-new');
             if (arguments.length === 1) {
-                self.raise('fileselect', [numFiles, label]);
+                self._raise('fileselect', [numFiles, label]);
             }
             if (previewCache.count(self.id)) {
-                self.initPreviewDeletes();
+                self._initPreviewDeletes();
             }
         },
-        change: function (e) {
+        _setThumbStatus: function ($thumb, status) {
+            var self = this;
+            if (!self.showPreview) {
+                return;
+            }
+            var icon = 'indicator' + status, msg = icon + 'Title',
+                css = 'file-preview-' + status.toLowerCase(),
+                $indicator = $thumb.find('.file-upload-indicator'),
+                config = self.fileActionSettings;
+            $thumb.removeClass('file-preview-success file-preview-error file-preview-loading');
+            if (status === 'Error') {
+                $thumb.find('.kv-file-upload').attr('disabled', true);
+            }
+            $indicator.html(config[icon]);
+            $indicator.attr('title', config[msg]);
+            $thumb.addClass(css);
+        },
+        _setProgressCancelled: function () {
+            var self = this;
+            self._setProgress(100, self.$progress, self.msgCancelled);
+        },
+        _setProgress: function (p, $el, error) {
+            var self = this, pct = Math.min(p, 100), template = pct < 100 ? self.progressTemplate :
+                (error ? self.progressErrorTemplate : self.progressCompleteTemplate);
+            $el = $el || self.$progress;
+            if (!isEmpty(template)) {
+                $el.html(template.replace(/\{percent}/g, pct));
+                if (error) {
+                    $el.find('[role="progressbar"]').html(error);
+                }
+            }
+        },
+        _setFileDropZoneTitle: function () {
+            var self = this, $zone = self.$container.find('.file-drop-zone');
+            $zone.find('.' + self.dropZoneTitleClass).remove();
+            if (!self.isUploadable || !self.showPreview || $zone.length === 0 || self.getFileStack().length > 0 || !self.dropZoneEnabled) {
+                return;
+            }
+            if ($zone.find('.file-preview-frame').length === 0 && isEmpty(self.defaultPreviewContent)) {
+                $zone.prepend('<div class="' + self.dropZoneTitleClass + '">' + self.dropZoneTitle + '</div>');
+            }
+            self.$container.removeClass('file-input-new');
+            addCss(self.$container, 'file-input-ajax-new');
+        },
+        _setAsyncUploadStatus: function (previewId, pct, total) {
+            var self = this, sum = 0;
+            self._setProgress(pct, $('#' + previewId).find('.file-thumb-progress'));
+            self.uploadStatus[previewId] = pct;
+            $.each(self.uploadStatus, function (key, value) {
+                sum += value;
+            });
+            self._setProgress(Math.ceil(sum / total));
+
+        },
+        _validateMinCount: function () {
+            var self = this, len = self.isUploadable ? self.getFileStack().length : self.$element.get(0).files.length;
+            if (self.validateInitialCount && self.minFileCount > 0 && self._getFileCount(
+                    len - 1) < self.minFileCount) {
+                self._noFilesError({});
+                return false;
+            }
+            return true;
+        },
+        _getFileCount: function (fileCount) {
+            var self = this, addCount = 0;
+            if (self.validateInitialCount && !self.overwriteInitial) {
+                addCount = previewCache.count(self.id);
+                fileCount += addCount;
+            }
+            return fileCount;
+        },
+        _getFileName: function (file) {
+            return file && file.name ? this.slug(file.name) : undefined;
+        },
+        _getFileNames: function (skipNull) {
+            var self = this;
+            return self.filenames.filter(function (n) {
+                return (skipNull ? n !== undefined : n !== undefined && n !== null);
+            });
+        },
+        _setPreviewError: function ($thumb, i, val) {
+            var self = this;
+            if (i) {
+                self.updateStack(i, val);
+            }
+            if (self.removeFromPreviewOnError) {
+                $thumb.remove();
+            } else {
+                self._setThumbStatus($thumb, 'Error');
+            }
+        },
+        _checkDimensions: function (i, chk, $img, $thumb, fname, type, params) {
+            var self = this, msg, dim, tag = chk === 'Small' ? 'min' : 'max', limit = self[tag + 'Image' + type],
+                $imgEl, isValid;
+            if (isEmpty(limit) || !$img.length) {
+                return;
+            }
+            $imgEl = $img[0];
+            dim = (type === 'Width') ? $imgEl.naturalWidth || $imgEl.width : $imgEl.naturalHeight || $imgEl.height;
+            isValid = chk === 'Small' ? dim >= limit : dim <= limit;
+            if (isValid) {
+                return;
+            }
+            msg = self['msgImage' + type + chk].replace('{name}', fname).replace('{size}', limit);
+            self._showUploadError(msg, params);
+            self._setPreviewError($thumb, i, null);
+        },
+        _validateImage: function (i, previewId, fname, ftype) {
+            var self = this, $preview = self.$preview, params, w1, w2,
+                $thumb = $preview.find("#" + previewId), $img = $thumb.find('img');
+            fname = fname || 'Untitled';
+            if (!$img.length) {
+                return;
+            }
+            handler($img, 'load', function () {
+                w1 = $thumb.width();
+                w2 = $preview.width();
+                if (w1 > w2) {
+                    $img.css('width', '100%');
+                    $thumb.css('width', '97%');
+                }
+                params = {ind: i, id: previewId};
+                self._checkDimensions(i, 'Small', $img, $thumb, fname, 'Width', params);
+                self._checkDimensions(i, 'Small', $img, $thumb, fname, 'Height', params);
+                if (!self.resizeImage) {
+                    self._checkDimensions(i, 'Large', $img, $thumb, fname, 'Width', params);
+                    self._checkDimensions(i, 'Large', $img, $thumb, fname, 'Height', params);
+                }
+                self._raise('fileimageloaded', [previewId]);
+                self.loadedImages.push({ind: i, img: $img, thumb: $thumb, pid: previewId, typ: ftype});
+                self._validateAllImages();
+                objUrl.revokeObjectURL($img.attr('src'));
+            });
+        },
+        _validateAllImages: function () {
+            var self = this, i, config, $img, $thumb, pid, ind, params = {}, errFunc;
+            if (self.loadedImages.length !== self.totalImagesCount) {
+                return;
+            }
+            self._raise('fileimagesloaded');
+            if (!self.resizeImage) {
+                return;
+            }
+            errFunc = self.isUploadable ? self._showUploadError : self._showError;
+            for (i = 0; i < self.loadedImages.length; i++) {
+                config = self.loadedImages[i];
+                $img = config.img;
+                $thumb = config.thumb;
+                pid = config.pid;
+                ind = config.ind;
+                params = {id: pid, 'index': ind};
+                if (!self._getResizedImage($img[0], config.typ, pid, ind)) {
+                    errFunc(self.msgImageResizeError, params, 'fileimageresizeerror');
+                    self._setPreviewError($thumb, ind);
+                }
+            }
+            self._raise('fileimagesresized');
+        },
+        _getResizedImage: function (image, type, pid, ind) {
+            var self = this, width = image.naturalWidth, height = image.naturalHeight, ratio = 1,
+                maxWidth = self.maxImageWidth || width, maxHeight = self.maxImageHeight || height,
+                isValidImage = (width && height), chkWidth, chkHeight,
+                canvas = self.imageCanvas, context = self.imageCanvasContext;
+            if (!isValidImage) {
+                return false;
+            }
+            if (width === maxWidth && height === maxHeight) {
+                return true;
+            }
+            type = type || self.resizeDefaultImageType;
+            chkWidth = width > maxWidth;
+            chkHeight = height > maxHeight;
+            if (self.resizePreference === 'width') {
+                ratio = chkWidth ? maxWidth / width : (chkHeight ? maxHeight / height : 1);
+            } else {
+                ratio = chkHeight ? maxHeight / height : (chkWidth ? maxWidth / width : 1);
+            }
+            self._resetCanvas();
+            width *= ratio;
+            height *= ratio;
+            canvas.width = width;
+            canvas.height = height;
+            try {
+                context.drawImage(image, 0, 0, width, height);
+                canvas.toBlob(function (blob) {
+                    self._raise('fileimageresized', [pid, ind]);
+                    self.filestack[ind] = blob;
+                }, type, self.resizeQuality);
+                return true;
+            }
+            catch (err) {
+                return false;
+            }
+        },
+        _initBrowse: function ($container) {
+            var self = this;
+            self.$btnFile = $container.find('.btn-file');
+            self.$btnFile.append(self.$element);
+        },
+        _initCaption: function () {
+            var self = this, cap = self.initialCaption || '';
+            if (self.overwriteInitial || isEmpty(cap)) {
+                self.$caption.html('');
+                return false;
+            }
+            self._setCaption(cap);
+            return true;
+        },
+        _setCaption: function (content, isError) {
+            var self = this, title, out, n, cap, stack = self.getFileStack();
+            if (!self.$caption.length) {
+                return;
+            }
+            if (isError) {
+                title = $('<div>' + self.msgValidationError + '</div>').text();
+                n = stack.length;
+                if (n) {
+                    cap = n === 1 && stack[0] ? self._getFileNames()[0] : self._getMsgSelected(n);
+                } else {
+                    cap = self._getMsgSelected(self.msgNo);
+                }
+                out = '<span class="' + self.msgValidationErrorClass + '">' + self.msgValidationErrorIcon +
+                    (isEmpty(content) ? cap : content) + '</span>';
+            } else {
+                if (isEmpty(content)) {
+                    return;
+                }
+                title = $('<div>' + content + '</div>').text();
+                out = self._getLayoutTemplate('icon') + title;
+            }
+            self.$caption.html(out);
+            self.$caption.attr('title', title);
+            self.$captionContainer.find('.file-caption-ellipsis').attr('title', title);
+        },
+        _createContainer: function () {
+            var self = this,
+                $container = $(document.createElement("div"))
+                    .attr({"class": 'file-input file-input-new'})
+                    .html(self._renderMain());
+            self.$element.before($container);
+            self._initBrowse($container);
+            return $container;
+        },
+        _refreshContainer: function () {
+            var self = this, $container = self.$container;
+            $container.before(self.$element);
+            $container.html(self._renderMain());
+            self._initBrowse($container);
+        },
+        _renderMain: function () {
+            var self = this, dropCss = (self.isUploadable && self.dropZoneEnabled) ? ' file-drop-zone' : 'file-drop-disabled',
+                close = !self.showClose ? '' : self._getLayoutTemplate('close'),
+                preview = !self.showPreview ? '' : self._getLayoutTemplate('preview')
+                    .replace(/\{class}/g, self.previewClass)
+                    .replace(/\{dropClass}/g, dropCss),
+                css = self.isDisabled ? self.captionClass + ' file-caption-disabled' : self.captionClass,
+                caption = self.captionTemplate.replace(/\{class}/g, css + ' kv-fileinput-caption');
+            return self.mainTemplate.replace(/\{class}/g, self.mainClass)
+                .replace(/\{preview}/g, preview)
+                .replace(/\{close}/g, close)
+                .replace(/\{caption}/g, caption)
+                .replace(/\{upload}/g, self._renderButton('upload'))
+                .replace(/\{remove}/g, self._renderButton('remove'))
+                .replace(/\{cancel}/g, self._renderButton('cancel'))
+                .replace(/\{browse}/g, self._renderButton('browse'));
+        },
+        _renderButton: function (type) {
+            var self = this, tmplt = self._getLayoutTemplate('btnDefault'), css = self[type + 'Class'],
+                title = self[type + 'Title'], icon = self[type + 'Icon'], label = self[type + 'Label'],
+                status = self.isDisabled ? ' disabled' : '', btnType = 'button';
+            switch (type) {
+                case 'remove':
+                    if (!self.showRemove) {
+                        return '';
+                    }
+                    break;
+                case 'cancel':
+                    if (!self.showCancel) {
+                        return '';
+                    }
+                    css += ' hide';
+                    break;
+                case 'upload':
+                    if (!self.showUpload) {
+                        return '';
+                    }
+                    if (self.isUploadable && !self.isDisabled) {
+                        tmplt = self._getLayoutTemplate('btnLink').replace('{href}', self.uploadUrl);
+                    } else {
+                        btnType = 'submit';
+                    }
+                    break;
+                case 'browse':
+                    tmplt = self._getLayoutTemplate('btnBrowse');
+                    break;
+                default:
+                    return '';
+            }
+            css += type === 'browse' ? ' btn-file' : ' fileinput-' + type + ' fileinput-' + type + '-button';
+            if (!isEmpty(label)) {
+                label = ' <span class="' + self.buttonLabelClass + '">' + label + '</span>';
+            }
+            return tmplt.replace('{type}', btnType)
+                .replace('{css}', css)
+                .replace('{title}', title)
+                .replace('{status}', status)
+                .replace('{icon}', icon)
+                .replace('{label}', label);
+        },
+        _renderThumbProgress: function () {
+            return '<div class="file-thumb-progress hide">' + this.progressTemplate.replace(/\{percent}/g,
+                    '0') + '</div>';
+        },
+        _renderFileFooter: function (caption, width) {
+            var self = this, config = self.fileActionSettings, footer, out, template = self._getLayoutTemplate(
+                'footer');
+            if (self.isUploadable) {
+                footer = template.replace(/\{actions}/g, self._renderFileActions(true, true, false, false, false));
+                out = footer.replace(/\{caption}/g, caption)
+                    .replace(/\{width}/g, width)
+                    .replace(/\{progress}/g, self._renderThumbProgress())
+                    .replace(/\{indicator}/g, config.indicatorNew)
+                    .replace(/\{indicatorTitle}/g, config.indicatorNewTitle);
+            } else {
+                out = template.replace(/\{actions}/g, '')
+                    .replace(/\{caption}/g, caption)
+                    .replace(/\{progress}/g, '')
+                    .replace(/\{width}/g, width)
+                    .replace(/\{indicator}/g, '')
+                    .replace(/\{indicatorTitle}/g, '');
+            }
+            out = replaceTags(out, self.previewThumbTags);
+            return out;
+        },
+        _renderFileActions: function (showUpload, showDelete, disabled, url, key) {
+            if (!showUpload && !showDelete) {
+                return '';
+            }
+            var self = this,
+                vUrl = url === false ? '' : ' data-url="' + url + '"',
+                vKey = key === false ? '' : ' data-key="' + key + '"',
+                btnDelete = self._getLayoutTemplate('actionDelete'),
+                btnUpload = '',
+                template = self._getLayoutTemplate('actions'),
+                otherButtons = self.otherActionButtons.replace(/\{dataKey}/g, vKey),
+                config = self.fileActionSettings,
+                removeClass = disabled ? config.removeClass + ' disabled' : config.removeClass;
+            btnDelete = btnDelete
+                .replace(/\{removeClass}/g, removeClass)
+                .replace(/\{removeIcon}/g, config.removeIcon)
+                .replace(/\{removeTitle}/g, config.removeTitle)
+                .replace(/\{dataUrl}/g, vUrl)
+                .replace(/\{dataKey}/g, vKey);
+            if (showUpload) {
+                btnUpload = self._getLayoutTemplate('actionUpload')
+                    .replace(/\{uploadClass}/g, config.uploadClass)
+                    .replace(/\{uploadIcon}/g, config.uploadIcon)
+                    .replace(/\{uploadTitle}/g, config.uploadTitle);
+            }
+            return template
+                .replace(/\{delete}/g, btnDelete)
+                .replace(/\{upload}/g, btnUpload)
+                .replace(/\{other}/g, otherButtons);
+        },
+        _browse: function (e) {
+            var self = this;
+            self._raise('filebrowse');
+            if (e && e.isDefaultPrevented()) {
+                return;
+            }
+            if (self.isError && !self.isUploadable) {
+                self.clear();
+            }
+            self.$captionContainer.focus();
+        },
+        _change: function (e) {
             var self = this, $el = self.$element;
             if (!self.isUploadable && isEmpty($el.val()) && self.fileInputCleared) { // IE 11 fix
                 self.fileInputCleared = false;
                 return;
             }
             self.fileInputCleared = false;
-            var tfiles, msg, total, $preview = self.$preview, isDragDrop = arguments.length > 1,
-                files = isDragDrop ? e.originalEvent.dataTransfer.files : $el.get(0).files,
-                isSingleUpload = isEmpty($el.attr('multiple')), i = 0, f, m, folders = 0,
-                ctr = self.filestack.length, isAjaxUpload = self.isUploadable,
+            var tfiles, msg, total, isDragDrop = arguments.length > 1, isAjaxUpload = self.isUploadable, i = 0, f, n, len,
+                files = isDragDrop ? e.originalEvent.dataTransfer.files : $el.get(0).files, ctr = self.filestack.length,
+                isSingleUpload = isEmpty($el.attr('multiple')), flagSingle = (isSingleUpload && ctr > 0), folders = 0,
                 throwError = function (mesg, file, previewId, index) {
-                    var p1 = $.extend(self.getOutData({}, {}, files), {id: previewId, index: index}),
+                    var p1 = $.extend(true, {}, self._getOutData({}, {}, files), {id: previewId, index: index}),
                         p2 = {id: previewId, index: index, file: file, files: files};
-                    return self.isUploadable ? self.showUploadError(mesg, p1) : self.showError(mesg, p2);
+                    return self.isUploadable ? self._showUploadError(mesg, p1) : self._showError(mesg, p2);
                 };
             self.reader = null;
-            self.resetUpload();
-            self.hideFileIcon();
+            self._resetUpload();
+            self._hideFileIcon();
             if (self.isUploadable) {
                 self.$container.find('.file-drop-zone .' + self.dropZoneTitleClass).remove();
             }
@@ -18730,187 +19877,343 @@ else if ( jQuery ) {
                 if (!isAjaxUpload) {
                     self.clear();
                 }
-                self.showFolderError(folders);
-                self.raise('fileselectnone');
+                self._showFolderError(folders);
+                self._raise('fileselectnone');
                 return;
             }
-            self.resetErrors();
-            if (!isAjaxUpload || (isSingleUpload && ctr > 0)) {
-                if (!self.overwriteInitial && previewCache.count(self.id)) {
-                    var out = previewCache.out(self.id);
-                    $preview.html(out.content);
-                    self.setCaption(out.caption);
-                    self.initPreviewDeletes();
-                } else {
-                    $preview.html('');
-                }
-
-                if (isSingleUpload && ctr > 0) {
-                    self.filestack = [];
-                }
-            }
-            total = self.isUploadable ? self.getFileStack().length + tfiles.length : tfiles.length;
+            self._resetErrors();
+            len = tfiles.length;
+            total = self._getFileCount(self.isUploadable ? (self.getFileStack().length + len) : len);
             if (self.maxFileCount > 0 && total > self.maxFileCount) {
-                msg = self.msgFilesTooMany.repl('{m}', self.maxFileCount).repl('{n}', total);
-                self.isError = throwError(msg, null, null, null);
-                self.$captionContainer.find('.kv-caption-icon').hide();
-                self.$caption.html(self.msgValidationError);
-                self.setEllipsis();
-                self.$container.removeClass('file-input-new file-input-ajax-new');
-                return;
-            }
-            if (!self.isIE9) {
-                self.readFiles(tfiles);
+                if (!self.autoReplace || len > self.maxFileCount) {
+                    n = (self.autoReplace && len > self.maxFileCount) ? len : total;
+                    msg = self.msgFilesTooMany.replace('{m}', self.maxFileCount).replace('{n}', n);
+                    self.isError = throwError(msg, null, null, null);
+                    self.$captionContainer.find('.kv-caption-icon').hide();
+                    self._setCaption('', true);
+                    self.$container.removeClass('file-input-new file-input-ajax-new');
+                    return;
+                }
+                if (total > self.maxFileCount) {
+                    self._resetPreviewThumbs(isAjaxUpload);
+                }
             } else {
-                self.updateFileDetails(1);
+                if (!isAjaxUpload || flagSingle) {
+                    self._resetPreviewThumbs(false);
+                    if (flagSingle) {
+                        self.clearStack();
+                    }
+                } else {
+                    if (isAjaxUpload && ctr === 0 && (!previewCache.count(self.id) || self.overwriteInitial)) {
+                        self._resetPreviewThumbs(true);
+                    }
+                }
             }
-            self.showFolderError(folders);
+            if (self.isPreviewable) {
+                self._readFiles(tfiles);
+            } else {
+                self._updateFileDetails(1);
+            }
+            self._showFolderError(folders);
         },
-        autoSizeImage: function (previewId) {
-            var self = this, $preview = self.$preview,
-                $thumb = $preview.find("#" + previewId),
-                $img = $thumb.find('img'), w1, w2, $cap;
-            if (!$img.length) {
-                return;
+        _abort: function (params) {
+            var self = this, data;
+            if (self.ajaxAborted && typeof self.ajaxAborted === "object" && self.ajaxAborted.message !== undefined) {
+                data = $.extend(true, {}, self._getOutData(), params);
+                data.abortData = self.ajaxAborted.data || {};
+                data.abortMessage = self.ajaxAborted.message;
+                self.cancel();
+                self._setProgress(100, self.$progress, self.msgCancelled);
+                self._showUploadError(self.ajaxAborted.message, data, 'filecustomerror');
+                return true;
             }
-            $img.on('load', function () {
-                w1 = $thumb.width();
-                w2 = $preview.width();
-                if (w1 > w2) {
-                    $img.css('width', '100%');
-                    $thumb.css('width', '97%');
+            return false;
+        },
+        _resetFileStack: function () {
+            var self = this, i = 0, newstack = [], newnames = [];
+            self._getThumbs().each(function () {
+                var $thumb = $(this), ind = $thumb.attr('data-fileindex'),
+                    file = self.filestack[ind];
+                if (ind === -1) {
+                    return;
                 }
-                $cap = $img.closest('.file-preview-frame').find('.file-caption-name');
-                if ($cap.length) {
-                    $cap.width($img.width());
-                    $cap.attr('title', $cap.text());
+                if (file !== undefined) {
+                    newstack[i] = file;
+                    newnames[i] = self._getFileName(file);
+                    $thumb.attr({
+                        'id': self.previewInitId + '-' + i,
+                        'data-fileindex': i
+                    });
+                    i++;
+                } else {
+                    $thumb.attr({
+                        'id': 'uploaded-' + uniqId(),
+                        'data-fileindex': '-1'
+                    });
                 }
-                self.raise('fileimageloaded', previewId);
+            });
+            self.filestack = newstack;
+            self.filenames = newnames;
+        },
+        clearStack: function () {
+            var self = this;
+            self.filestack = [];
+            self.filenames = [];
+            return self.$element;
+        },
+        updateStack: function (i, file) {
+            var self = this;
+            self.filestack[i] = file;
+            self.filenames[i] = self._getFileName(file);
+            return self.$element;
+        },
+        addToStack: function (file) {
+            var self = this;
+            self.filestack.push(file);
+            self.filenames.push(self._getFileName(file));
+            return self.$element;
+        },
+        getFileStack: function (skipNull) {
+            var self = this;
+            return self.filestack.filter(function (n) {
+                return (skipNull ? n !== undefined : n !== undefined && n !== null);
             });
         },
-        setCaption: function (content, isError) {
-            var self = this, err = isError || false, title, out;
-            if (isEmpty(content) || self.$caption.length === 0) {
+        lock: function () {
+            var self = this;
+            self._resetErrors();
+            self.disable();
+            if (self.showRemove) {
+                addCss(self.$container.find('.fileinput-remove'), 'hide');
+            }
+            if (self.showCancel) {
+                self.$container.find('.fileinput-cancel').removeClass('hide');
+            }
+            self._raise('filelock', [self.filestack, self._getExtraData()]);
+            return self.$element;
+        },
+        unlock: function (reset) {
+            var self = this;
+            if (reset === undefined) {
+                reset = true;
+            }
+            self.enable();
+            if (self.showCancel) {
+                addCss(self.$container.find('.fileinput-cancel'), 'hide');
+            }
+            if (self.showRemove) {
+                self.$container.find('.fileinput-remove').removeClass('hide');
+            }
+            if (reset) {
+                self._resetFileStack();
+            }
+            self._raise('fileunlock', [self.filestack, self._getExtraData()]);
+            return self.$element;
+        },
+        cancel: function () {
+            var self = this, xhr = self.ajaxRequests, len = xhr.length, i;
+            if (len > 0) {
+                for (i = 0; i < len; i += 1) {
+                    self.cancelling = true;
+                    xhr[i].abort();
+                }
+            }
+            self._setProgressCancelled();
+            self._getThumbs().each(function () {
+                var $thumb = $(this), ind = $thumb.attr('data-fileindex');
+                $thumb.removeClass('file-uploading');
+                if (self.filestack[ind] !== undefined) {
+                    $thumb.find('.kv-file-upload').removeClass('disabled').removeAttr('disabled');
+                    $thumb.find('.kv-file-remove').removeClass('disabled').removeAttr('disabled');
+                }
+                self.unlock();
+            });
+            return self.$element;
+        },
+        clear: function () {
+            var self = this, cap;
+            self.$btnUpload.removeAttr('disabled');
+            self._getThumbs().find('video,audio,img').each(function () {
+                cleanMemory($(this));
+            });
+            self._resetUpload();
+            self.clearStack();
+            self._clearFileInput();
+            self._resetErrors(true);
+            self._raise('fileclear');
+            if (self._hasInitialPreview()) {
+                self._showFileIcon();
+                self._resetPreview();
+                self._initPreviewDeletes();
+                self.$container.removeClass('file-input-new');
+            } else {
+                self._getThumbs().each(function () {
+                    self._clearObjects($(this));
+                });
+                if (self.isUploadable) {
+                    previewCache.data[self.id] = {};
+                }
+                self.$preview.html('');
+                cap = (!self.overwriteInitial && self.initialCaption.length > 0) ? self.initialCaption : '';
+                self._setCaption(cap);
+                self.$caption.attr('title', '');
+                addCss(self.$container, 'file-input-new');
+                self._validateDefaultPreview();
+            }
+            if (self.$container.find('.file-preview-frame').length === 0) {
+                if (!self._initCaption()) {
+                    self.$captionContainer.find('.kv-caption-icon').hide();
+                }
+            }
+            self._hideFileIcon();
+            self._raise('filecleared');
+            self.$captionContainer.focus();
+            self._setFileDropZoneTitle();
+            return self.$element;
+        },
+        reset: function () {
+            var self = this;
+            self._resetPreview();
+            self.$container.find('.fileinput-filename').text('');
+            self._raise('filereset');
+            addCss(self.$container, 'file-input-new');
+            if (self.$preview.find('.file-preview-frame').length || self.isUploadable && self.dropZoneEnabled) {
+                self.$container.removeClass('file-input-new');
+            }
+            self._setFileDropZoneTitle();
+            self.clearStack();
+            self.formdata = {};
+            return self.$element;
+        },
+        disable: function () {
+            var self = this;
+            self.isDisabled = true;
+            self._raise('filedisabled');
+            self.$element.attr('disabled', 'disabled');
+            self.$container.find(".kv-fileinput-caption").addClass("file-caption-disabled");
+            self.$container.find(".btn-file, .fileinput-remove, .fileinput-upload, .file-preview-frame button").attr(
+                "disabled",
+                true);
+            self._initDragDrop();
+            return self.$element;
+        },
+        enable: function () {
+            var self = this;
+            self.isDisabled = false;
+            self._raise('fileenabled');
+            self.$element.removeAttr('disabled');
+            self.$container.find(".kv-fileinput-caption").removeClass("file-caption-disabled");
+            self.$container.find(
+                ".btn-file, .fileinput-remove, .fileinput-upload, .file-preview-frame button").removeAttr("disabled");
+            self._initDragDrop();
+            return self.$element;
+        },
+        upload: function () {
+            var self = this, totLen = self.getFileStack().length, params = {},
+                i, outData, len, hasExtraData = !$.isEmptyObject(self._getExtraData());
+            if (self.minFileCount > 0 && self._getFileCount(totLen) < self.minFileCount) {
+                self._noFilesError(params);
                 return;
             }
-            if (err) {
-                title = $('<div>' + self.msgValidationError + '</div>').text();
-                out = '<span class="' + self.msgValidationErrorClass + '">' +
-                self.msgValidationErrorIcon + title + '</span>';
-            } else {
-                title = $('<div>' + content + '</div>').text();
-                out = title + self.getLayoutTemplate('icon');
+            if (!self.isUploadable || self.isDisabled || (totLen === 0 && !hasExtraData)) {
+                return;
             }
-            self.$caption.html(out);
-            self.$caption.attr('title', title);
-            self.$captionContainer.find('.file-caption-ellipsis').attr('title', title);
-            self.setEllipsis();
-        },
-        initBrowse: function ($container) {
-            var self = this;
-            self.$btnFile = $container.find('.btn-file');
-            self.$btnFile.append(self.$element);
-        },
-        createContainer: function () {
-            var self = this,
-                $container = $(document.createElement("span"))
-                    .attr({"class": 'file-input file-input-new'})
-                    .html(self.renderMain());
-            self.$element.before($container);
-            self.initBrowse($container);
-            return $container;
-        },
-        refreshContainer: function () {
-            var self = this, $container = self.$container;
-            $container.before(self.$element);
-            $container.html(self.renderMain());
-            self.initBrowse($container);
-        },
-        renderMain: function () {
-            var self = this, dropCss = (self.isUploadable && self.dropZoneEnabled) ? ' file-drop-zone' : '',
-                preview = self.showPreview ? self.getLayoutTemplate('preview').repl('{class}', self.previewClass)
-                    .repl('{dropClass}', dropCss) : '',
-                css = self.isDisabled ? self.captionClass + ' file-caption-disabled' : self.captionClass,
-                caption = self.captionTemplate.repl('{class}', css + ' kv-fileinput-caption');
-            return self.mainTemplate.repl('{class}', self.mainClass)
-                .repl('{preview}', preview)
-                .repl('{caption}', caption)
-                .repl('{upload}', self.renderUpload())
-                .repl('{remove}', self.renderRemove())
-                .repl('{cancel}', self.renderCancel())
-                .repl('{browse}', self.renderBrowse());
-        },
-        renderBrowse: function () {
-            var self = this, css = self.browseClass + ' btn-file', status = '';
-            if (self.isDisabled) {
-                status = ' disabled ';
+            self._resetUpload();
+            self.$progress.removeClass('hide');
+            self.uploadCount = 0;
+            self.uploadStatus = {};
+            self.uploadLog = [];
+            self.lock();
+            self._setProgress(2);
+            if (totLen === 0 && hasExtraData) {
+                self._uploadExtraOnly();
+                return;
             }
-            return '<div class="' + css + '"' + status + '> ' + self.browseIcon + self.browseLabel + ' </div>';
+            len = self.filestack.length;
+            self.hasInitData = false;
+            if (self.uploadAsync) {
+                outData = self._getOutData();
+                self._raise('filebatchpreupload', [outData]);
+                self.fileBatchCompleted = false;
+                self.uploadCache = {content: [], config: [], tags: [], append: true};
+                self.uploadAsyncCount = self.getFileStack().length;
+                for (i = 0; i < len; i++) {
+                    self.uploadCache.content[i] = null;
+                    self.uploadCache.config[i] = null;
+                    self.uploadCache.tags[i] = null;
+                }
+                for (i = 0; i < len; i++) {
+                    if (self.filestack[i] !== undefined) {
+                        self._uploadSingle(i, self.filestack, true);
+                    }
+                }
+                return;
+            }
+            self._uploadBatch();
+            return self.$element;
         },
-        renderRemove: function () {
-            var self = this, css = self.removeClass + ' fileinput-remove fileinput-remove-button', status = '';
-            if (!self.showRemove) {
-                return '';
-            }
-            if (self.isDisabled) {
-                status = ' disabled ';
-            }
-            return '<button type="button" title="' + self.removeTitle + '" class="' + css + '"' + status + '>' + self.removeIcon + self.removeLabel + '</button>';
+        destroy: function () {
+            var self = this, $cont = self.$container;
+            $cont.find('.file-drop-zone').off();
+            self.$element.insertBefore($cont).off(NAMESPACE).removeData();
+            $cont.off().remove();
+            return self.$element;
         },
-        renderCancel: function () {
-            var self = this, css = self.cancelClass + ' fileinput-cancel fileinput-cancel-button';
-            if (!self.showCancel) {
-                return '';
+        refresh: function (options) {
+            var self = this, $el = self.$element;
+            options = options ? $.extend(true, {}, self.options, options) : self.options;
+            self.destroy();
+            $el.fileinput(options);
+            if ($el.val()) {
+                $el.trigger('change.fileinput');
             }
-            return '<button type="button" title="' + self.cancelTitle + '" class="hide ' + css + '">' + self.cancelIcon + self.cancelLabel + '</button>';
-        },
-        renderUpload: function () {
-            var self = this, css = self.uploadClass + ' kv-fileinput-upload fileinput-upload-button', content = '', status = '';
-            if (!self.showUpload) {
-                return '';
-            }
-            if (self.isDisabled) {
-                status = ' disabled ';
-            }
-            if (!self.isUploadable || self.isDisabled) {
-                content = '<button type="submit" title="' + self.uploadTitle + '"class="' + css + '"' + status + '>' + self.uploadIcon + self.uploadLabel + '</button>';
-            } else {
-                content = '<a href="' + self.uploadUrl + '" title="' + self.uploadTitle + '" class="' + css + '"' + status + '>' + self.uploadIcon + self.uploadLabel + '</a>';
-            }
-            return content;
+            return $el;
         }
     };
 
-    //FileInput plugin definition
     $.fn.fileinput = function (option) {
         if (!hasFileAPISupport() && !isIE(9)) {
             return;
         }
-
-        var args = Array.apply(null, arguments);
+        var args = Array.apply(null, arguments), retvals = [];
         args.shift();
-        return this.each(function () {
-            var $this = $(this),
-                data = $this.data('fileinput'),
-                options = typeof option === 'object' && option;
+        this.each(function () {
+            var self = $(this), data = self.data('fileinput'), options = typeof option === 'object' && option,
+                lang = options.language || self.data('language') || 'en', loc = {}, opts;
 
             if (!data) {
-                data = new FileInput(this, $.extend({}, $.fn.fileinput.defaults, options, $(this).data()));
-                $this.data('fileinput', data);
+                if (lang !== 'en' && !isEmpty($.fn.fileinputLocales[lang])) {
+                    loc = $.fn.fileinputLocales[lang];
+                }
+                opts = $.extend(true, {}, $.fn.fileinput.defaults, $.fn.fileinputLocales.en, loc, options, self.data());
+                data = new FileInput(this, opts);
+                self.data('fileinput', data);
             }
 
             if (typeof option === 'string') {
-                data[option].apply(data, args);
+                retvals.push(data[option].apply(data, args));
             }
         });
+        switch (retvals.length) {
+            case 0:
+                return this;
+            case 1:
+                return retvals[0];
+            default:
+                return retvals;
+        }
     };
 
     $.fn.fileinput.defaults = {
+        language: 'en',
         showCaption: true,
         showPreview: true,
         showRemove: true,
         showUpload: true,
         showCancel: true,
+        showClose: true,
+        showUploadedThumbs: true,
+        autoReplace: false,
         mainClass: '',
         previewClass: '',
         captionClass: '',
@@ -18922,6 +20225,7 @@ else if ( jQuery ) {
         initialPreviewThumbTags: [],
         previewThumbTags: {},
         initialPreviewShowDelete: true,
+        removeFromPreviewOnError: false,
         deleteUrl: '',
         deleteExtraData: {},
         overwriteInitial: true,
@@ -18931,39 +20235,55 @@ else if ( jQuery ) {
         allowedPreviewMimeTypes: null,
         allowedFileTypes: null,
         allowedFileExtensions: null,
+        defaultPreviewContent: null,
         customLayoutTags: {},
         customPreviewTags: {},
         previewSettings: defaultPreviewSettings,
         fileTypeSettings: defaultFileTypeSettings,
         previewFileIcon: '<i class="glyphicon glyphicon-file"></i>',
-        browseIcon: '<i class="glyphicon glyphicon-folder-open"></i> &nbsp;',
+        previewFileIconClass: 'file-icon-4x',
+        previewFileIconSettings: {},
+        previewFileExtSettings: {},
+        buttonLabelClass: 'hidden-xs',
+        browseIcon: '<i class="glyphicon glyphicon-folder-open"></i>&nbsp;',
         browseClass: 'btn btn-primary',
-        removeIcon: '<i class="glyphicon glyphicon-trash"></i> ',
+        removeIcon: '<i class="glyphicon glyphicon-trash"></i>',
         removeClass: 'btn btn-default',
-        cancelIcon: '<i class="glyphicon glyphicon-ban-circle"></i> ',
+        cancelIcon: '<i class="glyphicon glyphicon-ban-circle"></i>',
         cancelClass: 'btn btn-default',
-        uploadIcon: '<i class="glyphicon glyphicon-upload"></i> ',
+        uploadIcon: '<i class="glyphicon glyphicon-upload"></i>',
         uploadClass: 'btn btn-default',
         uploadUrl: null,
         uploadAsync: true,
         uploadExtraData: {},
+        minImageWidth: null,
+        minImageHeight: null,
+        maxImageWidth: null,
+        maxImageHeight: null,
+        resizeImage: false,
+        resizePreference: 'width',
+        resizeQuality: 0.92,
+        resizeDefaultImageType: 'image/jpeg',
         maxFileSize: 0,
         minFileCount: 0,
         maxFileCount: 0,
+        validateInitialCount: false,
         msgValidationErrorClass: 'text-danger',
         msgValidationErrorIcon: '<i class="glyphicon glyphicon-exclamation-sign"></i> ',
         msgErrorClass: 'file-error-message',
+        progressThumbClass: "progress-bar progress-bar-success progress-bar-striped active",
         progressClass: "progress-bar progress-bar-success progress-bar-striped active",
         progressCompleteClass: "progress-bar progress-bar-success",
+        progressErrorClass: "progress-bar progress-bar-danger",
         previewFileType: 'image',
-        wrapTextLength: 250,
-        wrapIndicator: ' <span class="wrap-indicator" title="{title}" onclick="{dialog}">[&hellip;]</span>',
+        zoomIndicator: '<i class="glyphicon glyphicon-zoom-in"></i>',
         elCaptionContainer: null,
         elCaptionText: null,
         elPreviewContainer: null,
         elPreviewImage: null,
         elPreviewStatus: null,
         elErrorContainer: null,
+        errorCloseButton: '<span class="close kv-error-close">&times;</span>',
         slugCallback: null,
         dropZoneEnabled: true,
         dropZoneTitleClass: 'file-drop-zone-title',
@@ -18975,9 +20295,7 @@ else if ( jQuery ) {
         showAjaxErrorDetails: true
     };
 
-    $.fn.fileinput.locales = {};
-
-    $.fn.fileinput.locales.en = {
+    $.fn.fileinputLocales.en = {
         fileSingle: 'file',
         filePlural: 'files',
         browseLabel: 'Browse &hellip;',
@@ -18987,9 +20305,13 @@ else if ( jQuery ) {
         cancelTitle: 'Abort ongoing upload',
         uploadLabel: 'Upload',
         uploadTitle: 'Upload selected files',
-        msgSizeTooLarge: 'File "{name}" (<b>{size} KB</b>) exceeds maximum allowed upload size of <b>{maxSize} KB</b>. Please retry your upload!',
-        msgFilesTooLess: 'You must select at least <b>{n}</b> {files} to upload. Please retry your upload!',
-        msgFilesTooMany: 'Number of files selected for upload <b>({n})</b> exceeds maximum allowed limit of <b>{m}</b>. Please retry your upload!',
+        msgNo: 'No',
+        msgCancelled: 'Cancelled',
+        msgZoomTitle: 'View details',
+        msgZoomModalHeading: 'Detailed Preview',
+        msgSizeTooLarge: 'File "{name}" (<b>{size} KB</b>) exceeds maximum allowed upload size of <b>{maxSize} KB</b>.',
+        msgFilesTooLess: 'You must select at least <b>{n}</b> {files} to upload.',
+        msgFilesTooMany: 'Number of files selected for upload <b>({n})</b> exceeds maximum allowed limit of <b>{m}</b>.',
         msgFileNotFound: 'File "{name}" not found!',
         msgFileSecured: 'Security restrictions prevent reading the file "{name}".',
         msgFileNotReadable: 'File "{name}" is not readable.',
@@ -18997,27 +20319,92 @@ else if ( jQuery ) {
         msgFilePreviewError: 'An error occurred while reading the file "{name}".',
         msgInvalidFileType: 'Invalid type for file "{name}". Only "{types}" files are supported.',
         msgInvalidFileExtension: 'Invalid extension for file "{name}". Only "{extensions}" files are supported.',
-        msgValidationError: 'File Upload Error',
+        msgUploadAborted: 'The file upload was aborted',
+        msgValidationError: 'Validation Error',
         msgLoading: 'Loading file {index} of {files} &hellip;',
         msgProgress: 'Loading file {index} of {files} - {name} - {percent}% completed.',
-        msgSelected: '{n} files selected',
+        msgSelected: '{n} {files} selected',
         msgFoldersNotAllowed: 'Drag & drop files only! {n} folder(s) dropped were skipped.',
+        msgImageWidthSmall: 'Width of image file "{name}" must be at least {size} px.',
+        msgImageHeightSmall: 'Height of image file "{name}" must be at least {size} px.',
+        msgImageWidthLarge: 'Width of image file "{name}" cannot exceed {size} px.',
+        msgImageHeightLarge: 'Height of image file "{name}" cannot exceed {size} px.',
+        msgImageResizeError: 'Could not get the image dimensions to resize.',
+        msgImageResizeException: 'Error while resizing the image.<pre>{errors}</pre>',
         dropZoneTitle: 'Drag & drop files here &hellip;'
     };
-
-    $.extend($.fn.fileinput.defaults, $.fn.fileinput.locales.en);
 
     $.fn.fileinput.Constructor = FileInput;
 
     /**
-     * Convert automatically file inputs with class 'file'
-     * into a bootstrap fileinput control.
+     * Convert automatically file inputs with class 'file' into a bootstrap fileinput control.
      */
     $(document).ready(function () {
-        var $input = $('input.file[type=file]'), count = $input.attr('type') ? $input.length : 0;
-        if (count > 0) {
+        var $input = $('input.file[type=file]');
+        if ($input.length) {
             $input.fileinput();
         }
     });
+}));
+/*!
+ * FileInput Spanish Translations
+ *
+ * This file must be loaded after 'fileinput.js'. Patterns in braces '{}', or
+ * any HTML markup tags in the messages must not be converted or translated.
+ *
+ * @see http://github.com/kartik-v/bootstrap-fileinput
+ *
+ * NOTE: this file must be saved in UTF-8 encoding.
+ */
+(function ($) {
+    "use strict";
+
+    $.fn.fileinputLocales['es'] = {
+        fileSingle: 'archivo',
+        filePlural: 'archivos',
+        browseLabel: 'Examinar &hellip;',
+        removeLabel: 'Quitar',
+        removeTitle: 'Quitar archivos seleccionados',
+        cancelLabel: 'Cancelar',
+        cancelTitle: 'Abortar la subida en curso',
+        uploadLabel: 'Subir archivo',
+        uploadTitle: 'Subir archivos seleccionados',
+        msgNo: 'No',
+        msgCancelled: 'Cancelado',
+        msgZoomTitle: 'Ver detalles',
+        msgZoomModalHeading: 'Vista previa detallada',
+        msgSizeTooLarge: 'Archivo "{name}" (<b>{size} KB</b>) excede el tamaño máximo permitido de <b>{maxSize} KB</b>.',
+        msgFilesTooLess: 'Debe seleccionar al menos <b>{n}</b> {files} a cargar.',
+        msgFilesTooMany: 'El número de archivos seleccionados a cargar <b>({n})</b> excede el límite máximo permitido de <b>{m}</b>.',
+        msgFileNotFound: 'Archivo "{name}" no encontrado.',
+        msgFileSecured: 'No es posible acceder al archivo "{name}" porque estará siendo usado por otra aplicación o no tengamos permisos de lectura.',
+        msgFileNotReadable: 'No es posible acceder al archivo "{name}".',
+        msgFilePreviewAborted: 'Previsualización del archivo "{name}" cancelada.',
+        msgFilePreviewError: 'Ocurrió un error mientras se leía el archivo "{name}".',
+        msgInvalidFileType: 'Tipo de archivo no válido para "{name}". Sólo archivos "{types}" son permitidos.',
+        msgInvalidFileExtension: 'Extensión de archivo no válido para "{name}". Sólo archivos "{extensions}" son permitidos.',
+        msgUploadAborted: 'La carga de archivos se ha cancelado',
+        msgValidationError: 'Error de validacion',
+        msgLoading: 'Subiendo archivo {index} de {files} &hellip;',
+        msgProgress: 'Subiendo archivo {index} de {files} - {name} - {percent}% completado.',
+        msgSelected: '{n} {files} seleccionado(s)',
+        msgFoldersNotAllowed: 'Arrastre y suelte únicamente archivos. Omitida(s) {n} carpeta(s).',
+        msgImageWidthSmall: 'El ancho de la imagen "{name}" debe ser al menos {size} px.',
+        msgImageHeightSmall: 'La altura de la imagen "{name}" debe ser al menos {size} px.',
+        msgImageWidthLarge: 'El ancho de la imagen "{name}" no puede exceder de {size} px.',
+        msgImageHeightLarge: 'La altura de la imagen "{name}" no puede exceder de {size} px.',
+        msgImageResizeError: 'No se pudo obtener las dimensiones de imagen para cambiar el tamaño.',
+        msgImageResizeException: 'Error al cambiar el tamaño de la imagen.<pre>{errors}</pre>',
+        dropZoneTitle: 'Arrastre y suelte aquí los archivos &hellip;',
+        fileActionSettings: {
+            removeTitle: 'Eliminar archivo',
+            uploadTitle: 'Subir archivo',
+            indicatorNewTitle: 'No subido todavía',
+            indicatorSuccessTitle: 'Subido',
+            indicatorErrorTitle: 'Subir Error',
+            indicatorLoadingTitle: 'Subiendo ...'
+        }
+    };
 })(window.jQuery);
+
 //# sourceMappingURL=all.js.map

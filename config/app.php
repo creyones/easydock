@@ -147,6 +147,9 @@ return [
 		'App\Providers\EventServiceProvider',
 		'App\Providers\RouteServiceProvider',
 		'App\Providers\ParseServiceProvider',
+		'App\Providers\FontAwesomeServiceProvider',
+		'App\Providers\DataTablesServiceProvider',
+		'App\Providers\FileInputServiceProvider',
 
 		/*
 		*

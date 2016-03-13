@@ -9,6 +9,7 @@ use App\Models\Province;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Intervention\Image\Facades\Image;
 
 use Parse\ParseClient;
 use Parse\ParseObject;
@@ -113,6 +114,30 @@ class PortsController extends Controller {
 		$port->set('hoteles', $request->get('accomodation') == '1' ? true : false);
 		$port->set('vigilancia', $request->get('surveillance') == '1' ? true : false);
 		$port->set('wifi', $request->get('wifi') == '1' ? true : false);
+		//Set port images
+		$imagenames = array('plan','image','image2','image3');
+		foreach ($imagenames as $imagename) {
+			$file = $request->file($imagename);
+			dd($file);
+
+			if ($file and $file->isValid()){
+				//Original Image
+				$filepath = public_path('img') . "/" . $file->getClientOriginalName();
+				$file->move(public_path('img'), $file->getClientOriginalName());
+				$filepath = public_path('img') . "/" . $file->getClientOriginalName();
+
+				//Fit Images
+				$imagepath = $this->fitImage($filepath, 480, 480);
+
+				//Create Parse Files
+				$image = ParseFile::createFromFile($imagepath, basename($imagepath));
+				$dock->set($imagename, $image);
+			}
+			else {
+				dd($request);
+				if ($imagename == "plan") return redirect()->back()->withErrors(trans('messages.ports.invalid-file'));
+			}
+		}
 
 		try {
 			$port->save();

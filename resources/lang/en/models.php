@@ -42,6 +42,7 @@ return [
 		'city' => 'City',
 		'postalcode' => 'Postal Code',
 		'image' => 'Image',
+		'plan' => 'Plan',
 		'profile' => 'Profile',
 		'details' => 'Details',
 		'code' => 'Code',

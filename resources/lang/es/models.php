@@ -42,6 +42,7 @@ return [
 		'city' => 'Ciudad',
 		'postalcode' => 'Código Postal',
 		'image' => 'Imagen',
+		'plan' => 'Plano',
 		'profile' => 'Perfil',
 		'details' => 'Detalles',
 		'code' => 'Código',

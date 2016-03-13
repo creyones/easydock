@@ -47,6 +47,25 @@
 					</div>
 					<div class="row">
 						<hr/>
+						<div class="col-sm-3 col-xs-6">
+							<p><i class="fa fa-map-o"></i> <strong>{{trans('models.fields.plan')}}</strong></p>
+							<div class="thumbnail"><img src={{$port->get('plano') ? $port->get('plano')->getURL() : URL::to('/img/plan.png')}} class="img-rounded" alt="Image"></div>
+						</div>
+						<div class="col-sm-3 col-xs-6">
+							<p><i class="fa fa-file-image-o"></i> <strong>{{trans('models.fields.image')}}</strong></p>
+							<div class="thumbnail"><img src={{$port->get('imagen') ? $port->get('imagen')->getURL() : URL::to('/img/camera.png')}} class="img-rounded" alt="Image"></div>
+						</div>
+						<div class="col-sm-3 col-xs-6">
+							<p><i class="fa fa-file-image-o"></i> <strong>{{trans('models.fields.image')}}</strong></p>
+							<div class="thumbnail"><img src={{$port->get('imagen2') ? $port->get('imagen2')->getURL() : URL::to('/img/camera.png')}} class="img-rounded" alt="Image"></div>
+						</div>
+						<div class="col-sm-3 col-xs-6">
+							<p><i class="fa fa-file-image-o"></i> <strong>{{trans('models.fields.image')}}</strong></p>
+							<div class="thumbnail"><img src={{$port->get('imagen3') ? $port->get('imagen3')->getURL() : URL::to('/img/camera.png')}} class="img-rounded" alt="Image"></div>
+						</div>
+					</div>
+					<div class="row">
+						<hr/>
 						<div class="col-sm-12">
 							<p><i class="fa fa-list-ul"></i> <strong>{{trans('models.fields.services')}}</strong></p>
 							<label for="water" class="col-sm-3 control-label control-label-left">
