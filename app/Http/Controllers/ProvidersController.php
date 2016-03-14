@@ -216,7 +216,7 @@ class ProvidersController extends Controller {
 					return redirect()->back()->withErrors(trans('messages.providers.not-found'));
 				}
 				else {
-					return redirect()->back()->withErrors(trans('validation.custom.parse.save') . $ex->getMessage());
+					return redirect()->back()->withErrors(trans('parse.save') . $ex->getMessage());
 				}
 			}
 		}
@@ -265,7 +265,7 @@ class ProvidersController extends Controller {
 
 			} catch (ParseException $ex) {
 
-				return redirect()->back()->withErrors(trans('validation.custom.parse.delete') . $ex->getMessage());
+				return redirect()->back()->withErrors(trans('parse.delete') . $ex->getMessage());
 			}
 		}
 		else

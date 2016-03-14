@@ -4,6 +4,8 @@ use App\Http\Requests\Request;
 
 class PortRequest extends Request {
 
+	protected $dontFlash = [ 'image' ];
+
 	/**
 	 * Determine if the user is authorized to make this request.
 	 *
@@ -22,10 +24,11 @@ class PortRequest extends Request {
 	public function rules()
 	{
 		return [
-			'name' => 'required|min:8',
+			'name' => 'required|min:8|max:40',
 			'provinces' => 'required',
 			'latitude' => 'required|min:6',
-			'longitude' => 'required|min:6'
+			'longitude' => 'required|min:6',
+			'plan' => 'required|max:1000',
 		];
 	}
 

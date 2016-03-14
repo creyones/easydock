@@ -213,7 +213,7 @@ class PortsController extends Controller {
 					return redirect()->back()->withErrors(trans('messages.ports.not-found'));
 				}
 				else {
-					return redirect()->back()->withErrors(trans('validation.custom.parse.save') . $ex->getMessage());
+					return redirect()->back()->withErrors(trans('parse.save') . $ex->getMessage());
 				}
 			}
 		}
@@ -246,7 +246,7 @@ class PortsController extends Controller {
 
 			} catch (ParseException $ex) {
 
-				return redirect()->back()->withErrors(trans('validation.custom.parse') . $ex->getMessage());
+				return redirect()->back()->withErrors(trans('parse') . $ex->getMessage());
 			}
 		}
 		else

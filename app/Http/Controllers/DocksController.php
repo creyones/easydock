@@ -387,7 +387,7 @@ class DocksController extends Controller {
 					return redirect()->back()->withErrors(trans('messages.docks.not-found'));
 				}
 				else {
-					return redirect()->back()->withErrors(trans('validation.custom.parse.save') . $ex->getMessage());
+					return redirect()->back()->withErrors(trans('parse.save') . $ex->getMessage());
 				}
 			}
 		}

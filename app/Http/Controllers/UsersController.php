@@ -84,7 +84,7 @@ class UsersController extends Controller {
 				return redirect()->back()->withErrors(trans('validation.custom.email.unique'));
 			}
 			else{
-				return redirect()->back()->withErrors(trans('validation.custom.parse.save'));
+				return redirect()->back()->withErrors(trans('parse.save'));
 			}
 		}
 	}
