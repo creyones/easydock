@@ -13,7 +13,7 @@
 				@if (Auth::user()->hasRole('owner') || Auth::user()->hasRole('admin'))
 				<div class="col-sm-12">
 					<p class="lead"><i class="fa fa-edit fa-lg"></i> {{trans('views.edit_port')}}</p></li>
-					{!! Form::model($port, ['method'=> 'PATCH', 'action' => ['PortsController@update', $port->getObjectId()], 'class' =>'form-horizontal','role'=>'form']) !!}
+					{!! Form::model($port, ['method'=> 'PATCH', 'action' => ['PortsController@update', $port->getObjectId()], 'class' =>'form-horizontal','role'=>'form', 'files' => true]) !!}
 					<div class="form-group">
 						{!!Form::Label('created', trans('models.fields.created'), ['class'=>'col-sm-2 control-label']) !!}
 						<div class="col-sm-4">
@@ -96,6 +96,20 @@
 							</label>
 						</div>
 					</div>
+					<hr/>
+					<?php $names = array('plan', 'image', 'image2', 'image3'); ?>
+					@foreach ($names as $name)
+						<div class="form-group">
+							@if ($name == 'plan')
+								{!!Form::Label($name, trans('models.fields.plan'), ['class'=>'col-sm-2 control-label']) !!}
+							@else
+								{!!Form::Label($name, trans('models.fields.image'), ['class'=>'col-sm-2 control-label']) !!}
+							@endif
+							<div class="col-sm-8">
+								<input id="{{$name}}" name="{{$name}}" type="file" class="file" data-show-preview="true">
+							</div>
+						</div>
+					@endforeach
 					<div class="form-group">
 						<div class="col-sm-8 col-sm-offset-2">
 							{!!Form::submit(trans('actions.save'),['class' => 'btn btn-success']) !!}
@@ -116,4 +130,10 @@
 		</div>
 	</div>
 </div>
+<?php $fields = array('plan' => 'plano','image' => 'imagen','image2' => 'imagen2','image3' => 'imagen3');?>
+@foreach ($names as $name)
+	@if ($port->get($fields[$name]))
+		@include('partials.fileinput-preview', array('item' => $name, 'preview' => $port->get($fields[$name])->getURL(), 'caption' => trans('models.fields.image')))
+	@endif
+@endforeach
 @endsection

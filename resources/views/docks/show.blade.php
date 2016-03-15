@@ -114,7 +114,7 @@
 						</tbody>
 					</table>
 					@else
-					<p class="alert alert-info">{{trans('message.no_bookings')}}</p>
+					<p class="alert alert-info">{{trans('messages.docks.no-bookings')}}</p>
 					@endif
 				</div>
 			</div>
@@ -148,7 +148,7 @@
 						</tbody>
 					</table>
 					@else
-					<p class="alert alert-info">{{trans('message.no_docks')}}</p>
+					<p class="alert alert-info">{{trans('messages.docks.no-products')}}</p>
 					@endif
 				</div>
 			</div>

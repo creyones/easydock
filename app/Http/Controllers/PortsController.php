@@ -16,6 +16,7 @@ use Parse\ParseObject;
 use Parse\ParseQuery;
 use Parse\ParseUser;
 use Parse\ParseException;
+use Parse\ParseFile;
 
 class PortsController extends Controller {
 
@@ -95,9 +96,28 @@ class PortsController extends Controller {
 
 	public function store(PortRequest $request)
 	{
-
 		//Create Parse Port
 		$port = new ParseObject('Puertos');
+		//Set port images
+		$names = array('plan','image','image2','image3');
+		$fields = array('plan' => 'plano','image' => 'imagen','image2' => 'imagen2','image3' => 'imagen3');
+		foreach ($names as $name) {
+			$file = $request->file($name);
+
+			if ($file and $file->isValid()){
+				//Original Image
+				$file->move(public_path('img/ports/'), $file->getClientOriginalName());
+				$filepath = public_path('img/ports/') . $file->getClientOriginalName();
+
+				//Fit Images
+				$imagepath = $this->fitImage($filepath, 480, 480);
+
+				//Create Parse Files
+				$image = ParseFile::createFromFile($imagepath, basename($imagepath));
+				$port->set($fields[$name], $image);
+			}
+		}
+		//Set port parameters
 		$port->set('name', $request->get('name'));
 		$port->set('province', $request->get('provinces'));
 		$port->set('latitude', floatval($request->get('latitude')));
@@ -114,30 +134,6 @@ class PortsController extends Controller {
 		$port->set('hoteles', $request->get('accomodation') == '1' ? true : false);
 		$port->set('vigilancia', $request->get('surveillance') == '1' ? true : false);
 		$port->set('wifi', $request->get('wifi') == '1' ? true : false);
-		//Set port images
-		$imagenames = array('plan','image','image2','image3');
-		foreach ($imagenames as $imagename) {
-			$file = $request->file($imagename);
-			dd($file);
-
-			if ($file and $file->isValid()){
-				//Original Image
-				$filepath = public_path('img') . "/" . $file->getClientOriginalName();
-				$file->move(public_path('img'), $file->getClientOriginalName());
-				$filepath = public_path('img') . "/" . $file->getClientOriginalName();
-
-				//Fit Images
-				$imagepath = $this->fitImage($filepath, 480, 480);
-
-				//Create Parse Files
-				$image = ParseFile::createFromFile($imagepath, basename($imagepath));
-				$dock->set($imagename, $image);
-			}
-			else {
-				dd($request);
-				if ($imagename == "plan") return redirect()->back()->withErrors(trans('messages.ports.invalid-file'));
-			}
-		}
 
 		try {
 			$port->save();
@@ -177,11 +173,30 @@ class PortsController extends Controller {
 		$current_user = Auth::user();
 
 		if ($current_user->hasRole('admin') || $current_user->hasRole('owner')){
-
 			//Query Port
 			$query = new ParseQuery('Puertos');
 			//Get Port by id
 			$port = $query->get($id);
+			//Set port images
+			$names = array('plan','image','image2','image3');
+			$fields = array('plan' => 'plano','image' => 'imagen','image2' => 'imagen2','image3' => 'imagen3');
+			foreach ($names as $name) {
+				$file = $request->file($name);
+
+				if ($file and $file->isValid()){
+					//Original Image
+					$file->move(public_path('img/ports/'), $file->getClientOriginalName());
+					$filepath = public_path('img/ports/') . $file->getClientOriginalName();
+
+					//Fit Images
+					$imagepath = $this->fitImage($filepath, 480, 480);
+
+					//Create Parse Files
+					$image = ParseFile::createFromFile($imagepath, basename($imagepath));
+					$port->set($fields[$name], $image);
+				}
+			}
+
 			$port->set('name', $request->get('name'));
 			$port->set('province', $request->get('provinces'));
 			$port->set('latitude', floatval($request->get('latitude')));
@@ -271,6 +286,22 @@ class PortsController extends Controller {
 			$provinces[$items[$i]->get('nombre')] = $items[$i]->get('nombre');
 		}
 		return $provinces;
+	}
+
+	private function fitImage($path, $width, $height, $suffix = 'scaled')
+	{
+		//Scaled Image
+		$parts = pathinfo($path);
+
+		$name = $parts['filename'];
+		$ext = $parts['extension'];
+		$dirname = $parts['dirname'];
+		$output = $dirname . '/' . $name . '-' . $suffix . '.' . $ext;
+
+		Image::make($path)->fit($width, $height)->save($output);
+
+		return $output;
+
 	}
 
 }

@@ -169,23 +169,5 @@
 	</div>
 </div>
 @include('partials.daterange')
-<script type="text/javascript">
-	$("#image").fileinput({
-		initialPreview: [
-			"<img src='{{$dock->get('image')->getURL()}}' class='file-preview-image' alt='{{trans('models.fields.image')}}' title='{{trans('models.fields.image')}}'>",
-		],
-		uploadUrl: "{{url("/")}}/tmp/", // server upload action
-    uploadAsync: true,
-		dropZoneEnabled: false,
-		minFileCount: 1,
-		maxFileCount: 1,
-		overwriteInitial: true,
-    maxFileSize: 800,
-		showUpload: false,
-		showRemove: false,
-		showCancel: false,
-		allowedFileExtensions: ["jpg", "gif", "png"],
-		initialCaption: "{{trans('models.fields.image')}}"
-	});
-</script>
+@include('partials.fileinput-preview', array('item' => 'image', 'preview' => $dock->get('image')->getURL(), 'caption' => trans('models.fields.image')))
 @endsection

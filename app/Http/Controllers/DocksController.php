@@ -135,58 +135,44 @@ class DocksController extends Controller {
 
 	public function store(DockRequest $request)
 	{
-
+		//Create Parse Dock
+		$dock = new ParseObject('Atraques');
+		//dd($request);
 		$file = $request->file('image');
 
 		if ($file and $file->isValid()){
 			//Original Image
-			$filepath = public_path('img') . "/" . $file->getClientOriginalName();
-			$file->move(public_path('img'), $file->getClientOriginalName());
+			$file->move(public_path('img/docks/'), $file->getClientOriginalName());
+			$filepath = public_path('img/docks/') . $file->getClientOriginalName();
+
+			//Fit Images
+			$imagepath = $this->fitImage($filepath, 480, 480);
+			$thumbpath = $this->fitImage($imagepath, 240, 240, 'thumb');
+
+			//Create Parse Files
+			$image = ParseFile::createFromFile($imagepath, basename($imagepath));
+			$thumbnail = ParseFile::createFromFile($thumbpath, basename($thumbpath));
+
+			// Carbonize dates
+			$begin = createDate($request->get('from'));
+			$end = createDate($request->get('until'));
+			$dock->set('image', $image);
 
 		}
 		else {
 			return redirect()->back()->withErrors(trans('messages.docks.not-found'));
 		}
-
-		$filepath = public_path('img') . "/" . $file->getClientOriginalName();
-
-		//Fit Images
-		$imagepath = $this->fitImage($filepath, 480, 480);
-		$thumbpath = $this->fitImage($imagepath, 240, 240, 'thumb');
-
-		//Create Parse Files
-		$image = ParseFile::createFromFile($imagepath, basename($imagepath));
-		$thumbnail = ParseFile::createFromFile($thumbpath, basename($thumbpath));
-
-		// Carbonize dates
-		$begin = createDate($request->get('from'));
-		$end = createDate($request->get('until'));
-
-		//Create Parse Dock
-		$dock = new ParseObject('Atraques');
 		$dock->set('name', $request->get('name'));
 		$dock->set('detailText', $request->get('details'));
 		$dock->set('codigo', $request->get('code'));
 		$dock->set('fechaInicio', $begin);
 		$dock->set('fechaFinal', $end);
 		$dock->set('precio', floatval($request->get('price')));
-		$dock->set('image', $image);
 		$dock->set('thumbnail', $thumbnail);
 		$dock->set('available', true);
 		$dock->set('manga', floatval($request->get('beam')));
 		$dock->set('eslora', floatval($request->get('length')));
 		$dock->set('calado', floatval($request->get('draft')));
-		$dock->set('agua', $request->get('water') == '1' ? true : false);
-		$dock->set('electricidad', $request->get('power') == '1' ? true : false);
-		$dock->set('gasolinera', $request->get('gas') == '1' ? true : false);
-		$dock->set('marineros', $request->get('naval') == '1' ? true : false);
-		$dock->set('radio', $request->get('radio') == '1' ? true : false);
-		$dock->set('restaurantes', $request->get('restaurant') == '1' ? true : false);
-		$dock->set('taquillas', $request->get('locker') == '1' ? true : false);
-		$dock->set('vestuarios', $request->get('lockerroom') == '1' ? true : false);
-		$dock->set('hoteles', $request->get('accomodation') == '1' ? true : false);
-		$dock->set('vigilancia', $request->get('surveillance') == '1' ? true : false);
-		$dock->set('wifi', $request->get('wifi') == '1' ? true : false);
 
 		//Get Provider Relation
 		$provider = $this->getRelatedProvider($request->get('provider'));
@@ -196,6 +182,18 @@ class DocksController extends Controller {
 		$dock->getRelation('puertoRelation')->add($port);
 		$dock->getRelation('vendedorRelation')->add($provider);
 		$dock->set('provincia', $port->get('province'));
+		//Set port services by default
+		$dock->set('agua', $port->get('agua'));
+		$dock->set('electricidad', $port->get('electricidad'));
+		$dock->set('gasolinera', $port->get('gasolinera'));
+		$dock->set('marineros', $port->get('marineros'));
+		$dock->set('radio', $port->get('radio'));
+		$dock->set('restaurantes', $port->get('restaurantes'));
+		$dock->set('taquillas', $port->get('taquillas'));
+		$dock->set('vestuarios', $port->get('vestuarios'));
+		$dock->set('hoteles', $port->get('hoteles'));
+		$dock->set('vigilancia', $port->get('vigilancia'));
+		$dock->set('wifi', $port->get('wifi'));
 
 		try {
 
@@ -343,8 +341,8 @@ class DocksController extends Controller {
 			if ($file and $file->isValid()){
 				//dd($file);
 				//Original Image
-				$filepath = public_path('img') . "/" . $file->getClientOriginalName();
-				$file->move(public_path('img'), $file->getClientOriginalName());
+				$filepath = public_path('img/docks/') . $file->getClientOriginalName();
+				$file->move(public_path('img/docks'), $file->getClientOriginalName());
 
 				//Fit Images
 				$imagepath = $this->fitImage($filepath, 480, 480);

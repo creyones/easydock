@@ -110,38 +110,39 @@
 							{{trans("models.fields.services")}}
 						</label>
 						<div class="col-sm-8">
+							<div class="alert alert-info">{{trans('messages.docks.default-services')}}</div>
 							<label for="water" class="col-sm-3 control-label control-label-left">
-								{!!Form::checkbox('water', 1, null) !!} {{trans('models.fields.water')}}
+								{!!Form::checkbox('water', 1, null, ['disabled' => 'disabled']) !!} {{trans('models.fields.water')}}
 							</label>
 							<label for="power" class="col-sm-3 control-label control-label-left">
-								{!!Form::checkbox('power', 1, null) !!} {{trans('models.fields.power')}}
+								{!!Form::checkbox('power', 1, null, ['disabled' => 'disabled']) !!} {{trans('models.fields.power')}}
 							</label>
 							<label for="gas" class="col-sm-3 control-label control-label-left">
-								{!!Form::checkbox('gas', 1, null) !!} {{trans('models.fields.gas')}}
+								{!!Form::checkbox('gas', 1, null, ['disabled' => 'disabled']) !!} {{trans('models.fields.gas')}}
 							</label>
 							<label for="naval" class="col-sm-3 control-label control-label-left">
-								{!!Form::checkbox('naval', 1, null) !!} {{trans('models.fields.naval')}}
+								{!!Form::checkbox('naval', 1, null, ['disabled' => 'disabled']) !!} {{trans('models.fields.naval')}}
 							</label>
 							<label for="radio" class="col-sm-3 control-label control-label-left">
-								{!!Form::checkbox('radio', 1, null) !!} {{trans('models.fields.radio')}}
+								{!!Form::checkbox('radio', 1, null, ['disabled' => 'disabled']) !!} {{trans('models.fields.radio')}}
 							</label>
 							<label for="restaurant" class="col-sm-3 control-label control-label-left">
-								{!!Form::checkbox('restaurant', 1, null) !!} {{trans('models.fields.restaurant')}}
+								{!!Form::checkbox('restaurant', 1, null, ['disabled' => 'disabled']) !!} {{trans('models.fields.restaurant')}}
 							</label>
 							<label for="locker" class="col-sm-3 control-label control-label-left">
-								{!!Form::checkbox('locker', 1, null) !!} {{trans('models.fields.locker')}}
+								{!!Form::checkbox('locker', 1, null, ['disabled' => 'disabled']) !!} {{trans('models.fields.locker')}}
 							</label>
 							<label for="lockerroom" class="col-sm-3 control-label control-label-left">
-								{!!Form::checkbox('lockerroom', 1, null) !!} {{trans('models.fields.locker-room')}}
+								{!!Form::checkbox('lockerroom', 1, null, ['disabled' => 'disabled']) !!} {{trans('models.fields.locker-room')}}
 							</label>
 							<label for="accomodation" class="col-sm-3 control-label control-label-left">
-								{!!Form::checkbox('accomodation', 1, null) !!} {{trans('models.fields.accomodation')}}
+								{!!Form::checkbox('accomodation', 1, null, ['disabled' => 'disabled']) !!} {{trans('models.fields.accomodation')}}
 							</label>
 							<label for="surveillance" class="col-sm-3 control-label control-label-left">
-								{!!Form::checkbox('surveillance', 1, null) !!} {{trans('models.fields.surveillance')}}
+								{!!Form::checkbox('surveillance', 1, null, ['disabled' => 'disabled']) !!} {{trans('models.fields.surveillance')}}
 							</label>
 							<label for="wifi" class="col-sm-3 control-label control-label-left">
-								{!!Form::checkbox('wifi', 1, null) !!} {{trans('models.fields.wifi')}}
+								{!!Form::checkbox('wifi', 1, null, ['disabled' => 'disabled']) !!} {{trans('models.fields.wifi')}}
 							</label>
 						</div>
 					</div>
@@ -166,5 +167,5 @@
 	</div>
 </div>
 @include('partials.daterange')
-@include('partials.fileinput')
+@include('partials.fileinput', array('item' => 'image'))
 @endsection

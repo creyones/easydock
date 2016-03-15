@@ -4,7 +4,7 @@ use App\Http\Requests\Request;
 
 class PortRequest extends Request {
 
-	protected $dontFlash = [ 'image' ];
+	protected $dontFlash = [ 'plan' ];
 
 	/**
 	 * Determine if the user is authorized to make this request.
@@ -23,12 +23,17 @@ class PortRequest extends Request {
 	 */
 	public function rules()
 	{
+		if(str_contains(Request::route()->getAction()['uses'],'update'))
+		{
+			$image_rule = '';
+		}
+		else $image_rule = 'required|max:1000';
 		return [
 			'name' => 'required|min:8|max:40',
 			'provinces' => 'required',
 			'latitude' => 'required|min:6',
 			'longitude' => 'required|min:6',
-			'plan' => 'required|max:1000',
+			'plan' => $image_rule,
 		];
 	}
 

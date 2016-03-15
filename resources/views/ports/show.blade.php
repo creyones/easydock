@@ -47,25 +47,6 @@
 					</div>
 					<div class="row">
 						<hr/>
-						<div class="col-sm-3 col-xs-6">
-							<p><i class="fa fa-map-o"></i> <strong>{{trans('models.fields.plan')}}</strong></p>
-							<div class="thumbnail"><img src={{$port->get('plano') ? $port->get('plano')->getURL() : URL::to('/img/plan.png')}} class="img-rounded" alt="Image"></div>
-						</div>
-						<div class="col-sm-3 col-xs-6">
-							<p><i class="fa fa-file-image-o"></i> <strong>{{trans('models.fields.image')}}</strong></p>
-							<div class="thumbnail"><img src={{$port->get('imagen') ? $port->get('imagen')->getURL() : URL::to('/img/camera.png')}} class="img-rounded" alt="Image"></div>
-						</div>
-						<div class="col-sm-3 col-xs-6">
-							<p><i class="fa fa-file-image-o"></i> <strong>{{trans('models.fields.image')}}</strong></p>
-							<div class="thumbnail"><img src={{$port->get('imagen2') ? $port->get('imagen2')->getURL() : URL::to('/img/camera.png')}} class="img-rounded" alt="Image"></div>
-						</div>
-						<div class="col-sm-3 col-xs-6">
-							<p><i class="fa fa-file-image-o"></i> <strong>{{trans('models.fields.image')}}</strong></p>
-							<div class="thumbnail"><img src={{$port->get('imagen3') ? $port->get('imagen3')->getURL() : URL::to('/img/camera.png')}} class="img-rounded" alt="Image"></div>
-						</div>
-					</div>
-					<div class="row">
-						<hr/>
 						<div class="col-sm-12">
 							<p><i class="fa fa-list-ul"></i> <strong>{{trans('models.fields.services')}}</strong></p>
 							<label for="water" class="col-sm-3 control-label control-label-left">
@@ -101,6 +82,25 @@
 							<label for="wifi" class="col-sm-3 control-label control-label-left">
 							  {!!Form::checkbox('wifi', 1, $port->get('wifi'), ['disabled' => 'disabled']) !!} {{trans('models.fields.wifi')}}
 							</label>
+						</div>
+					</div>
+					<div class="row">
+						<hr/>
+						<div class="col-sm-3 col-xs-6">
+							<p><i class="fa fa-map-o"></i> <strong>{{trans('models.fields.plan')}}</strong></p>
+							<div class="thumbnail"><img src={{$port->get('plano') ? $port->get('plano')->getURL() : URL::to('/img/plan.png')}} class="img-rounded" alt="Image"></div>
+						</div>
+						<div class="col-sm-3 col-xs-6">
+							<p><i class="fa fa-file-image-o"></i> <strong>{{trans('models.fields.image')}}</strong></p>
+							<div class="thumbnail"><img src={{$port->get('imagen') ? $port->get('imagen')->getURL() : URL::to('/img/camera.png')}} class="img-rounded" alt="Image"></div>
+						</div>
+						<div class="col-sm-3 col-xs-6">
+							<p><i class="fa fa-file-image-o"></i> <strong>{{trans('models.fields.image')}}</strong></p>
+							<div class="thumbnail"><img src={{$port->get('imagen2') ? $port->get('imagen2')->getURL() : URL::to('/img/camera.png')}} class="img-rounded" alt="Image"></div>
+						</div>
+						<div class="col-sm-3 col-xs-6">
+							<p><i class="fa fa-file-image-o"></i> <strong>{{trans('models.fields.image')}}</strong></p>
+							<div class="thumbnail"><img src={{$port->get('imagen3') ? $port->get('imagen3')->getURL() : URL::to('/img/camera.png')}} class="img-rounded" alt="Image"></div>
 						</div>
 					</div>
 				</div>
@@ -148,7 +148,7 @@
 						</tbody>
 					</table>
 					@else
-					<p class="alert alert-info">{{trans('message.no_docks')}}</p>
+					<p class="alert alert-info">{{trans('messages.ports.no-docks')}}</p>
 					@endif
 				</div>
 			</div>

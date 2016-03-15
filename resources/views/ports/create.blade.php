@@ -13,7 +13,7 @@
 				@if (Auth::user()->hasRole('owner') || Auth::user()->hasRole('admin'))
 				<div class="col-sm-12">
 					<p class="lead"><i class="fa fa-plus-square fa-lg"></i> {{trans('views.create_port')}}</p></li>
-					{!! Form::open(['action' => 'PortsController@store', 'class' => 'form-horizontal','role'=>'form']) !!}
+					{!! Form::open(['action' => 'PortsController@store', 'class' => 'form-horizontal','role'=>'form', 'files' => true]) !!}
 					<div class="form-group">
 						{!!Form::Label('name', trans('models.fields.name'), ['class'=>'col-sm-2 control-label']) !!}
 						<div class="col-sm-8">
@@ -79,12 +79,19 @@
 						</div>
 					</div>
 					<hr/>
-					<div class="form-group">
-						{!!Form::Label('plan', trans('models.fields.plan'), ['class'=>'col-sm-2 control-label']) !!}
-						<div class="col-sm-8">
-							<input id="plan" name="plan" type="file" class="file" data-show-preview="false">
+					<?php $names = array('plan', 'image', 'image2', 'image3'); ?>
+					@foreach ($names as $name)
+						<div class="form-group">
+							@if ($name == 'plan')
+								{!!Form::Label($name, trans('models.fields.plan'), ['class'=>'col-sm-2 control-label']) !!}
+							@else
+								{!!Form::Label($name, trans('models.fields.image'), ['class'=>'col-sm-2 control-label']) !!}
+							@endif
+							<div class="col-sm-8">
+								<input id="{{$name}}" name="{{$name}}" type="file" class="file" data-show-preview="false">
+							</div>
 						</div>
-					</div>
+					@endforeach
 					<div class="form-group">
 						<div class="col-sm-8 col-sm-offset-2">
 							{!!Form::submit(trans('actions.save'),['class' => 'btn btn-success']) !!}
@@ -104,5 +111,7 @@
 		</div>
 	</div>
 </div>
-@include('partials.fileinput')
+@foreach ($names as $name)
+	@include('partials.fileinput', array('item' => $name))
+@endforeach
 @endsection

@@ -39,6 +39,7 @@ return [
 		'not-available' => 'Este vendedor no está disponible.',
 		'not-modified' => 'Este vendedor no ha sido modificado.',
 		'confirm-delete' => '¿Está seguro de que quiere borrar este vendedor? Toda la información relacionada con el vendedor se perderá. Los atraques y reservas relacionados se eliminarán.',
+		'no-docks' => 'No hay ningun atraque relacionado con este vendedor',
 	],
 	'ports' => [
 		'created' => 'El puerto ha sido creado correctamente.',
@@ -48,6 +49,7 @@ return [
 		'not-available' => 'Este puerto no está disponible.',
 		'not-modified' => 'Este puerto no ha sido modificado.',
 		'confirm-delete' => '¿Está seguro de que quiere borrar este puerto? Toda la información relacionada con el puerto se perderá. Las reservas y atraques relacionados se eliminarán.',
+		'no-docks' => 'No hay ningun atraque relacionado con este puerto',
 	],
 	'docks' => [
 		'created' => 'El atraque ha sido creado correctamente.',
@@ -57,6 +59,9 @@ return [
 		'not-available' => 'Este atraque no está disponible.',
 		'not-modified' => 'Este atraque no ha sido modificado.',
 		'confirm-delete' => '¿Está seguro de que quiere borrar este atraque? Toda la información relacionada con el atraque se perderá. Las reservas y productos relacionados se eliminarán.',
+		'default-services' => 'Los servicios del atraque se fijarán con los que tenga el puerto. Si quiere cambiarlos, edite el atraque una vez creado.',
+		'no-products' => 'No hay ningun producto relacionado con este atraque',
+		'no-bookings' => 'No hay ninguna solicitud de reserva relacionada con este atraque',
 	],
 	'bookings' => [
 		'created' => 'La reserva ha sido creado correctamente.',
@@ -66,5 +71,6 @@ return [
 		'not-available' => 'La reserva no está disponible.',
 		'not-modified' => 'La reserva no ha sido modificada.',
 		'confirm-delete' => '¿Está seguro de que quiere borrar esta reserva? Toda la información relacionada con la reserva se perderá. Los productos relacionados se eliminarán.',
+		'no-products' => 'No hay ningun producto relacionado con esta solicitud de reserva',
 	],
 ];

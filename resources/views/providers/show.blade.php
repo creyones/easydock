@@ -133,7 +133,7 @@
 						</tbody>
 					</table>
 					@else
-					<p class="alert alert-info">{{trans('message.no_docks')}}</p>
+					<p class="alert alert-info">{{trans('messages.providers.no-docks')}}</p>
 					@endif
 				</div>
 			</div>

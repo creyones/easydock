@@ -51,7 +51,7 @@
 									{{trans('actions.login')}}
 								</button>
 
-								<a href="/password/email">{{trans('messages.forgot_password')}}</a>
+								<a href="/password/email">{{trans('messages.forgot-password')}}</a>
 							</div>
 						</div>
 					</form>
