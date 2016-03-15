@@ -237,7 +237,21 @@ class DocksController extends Controller {
 				$ports = $this->listPorts();
 				$providers = $this->listProviders();
 
-				return view('docks.edit', compact('dock', 'port', 'provider', 'ports', 'providers'));
+				//Query related Bookings
+				$q = new ParseQuery('Solicitudes');
+				$q->matchesQuery('atraqueRelation', $query);
+				$q->ascending('fechaInicio');
+
+				$bookings = $q->find();
+
+				//Query related Products
+				$q = new ParseQuery('Productos');
+				$q->matchesQuery('atraqueRelation', $query);
+				$q->ascending('fecha');
+
+				$products = $q->find();
+
+				return view('docks.edit', compact('dock', 'port', 'provider', 'ports', 'providers', 'bookings', 'products'));
 
 			}
 			catch (ParseException $ex) {

@@ -26,18 +26,16 @@
 					</div>
 					<div class="form-group">
 						{!!Form::Label('id', trans('models.fields.id'), ['class'=>'col-sm-2 control-label']) !!}
-						<div class="col-sm-8">
+						<div class="col-sm-3">
 							{!! Form::text('id', $dock->getObjectId(), ['class'=>'form-control', 'disabled' => 'disabled']) !!}
+						</div>
+						{!!Form::Label('provider', trans('models.provider'), ['class'=>'col-sm-2 control-label']) !!}
+						<div class="col-sm-3">
+							{!! Form::select('provider', $providers, $provider->get('username'), ['class'=>'form-control']) !!}
 						</div>
 					</div>
 					<hr/>
 					@if (!Auth::user()->hasRole('provider'))
-					<div class="form-group">
-						{!!Form::Label('provider', trans('models.provider'), ['class'=>'col-sm-2 control-label']) !!}
-						<div class="col-sm-8">
-							{!! Form::select('provider', $providers, $provider->get('username'), ['class'=>'form-control']) !!}
-						</div>
-					</div>
 					<div class="form-group">
 						{!!Form::Label('port', trans('models.port'), ['class'=>'col-sm-2 control-label']) !!}
 						<div class="col-sm-8">
@@ -66,46 +64,26 @@
 					</div>
 					<hr/>
 					<div class="form-group">
-						{!!Form::Label('image', trans('models.fields.image'), ['class'=>'col-sm-2 control-label']) !!}
-						<div class="col-sm-8">
-							<input name="image" id="image" type="file" class="file" data-show-preview="true">
-						</div>
-					</div>
-					<hr/>
-					<div class="form-group">
-						{!!Form::Label('price', trans('models.fields.price') . " (". trans('messages.price-per-day') .")", ['class'=>'col-sm-2 control-label']) !!}
-						<div class="col-sm-8">
-							{!! Form::text('price',  $dock->get('precio'), ['class'=>'form-control']) !!}
-						</div>
-					</div>
-					<div class="form-group">
-						<div class="col-sm-2 control-label"><p>{{ trans('models.fields.available') }}</p></div>
-						<div class="col-sm-4">
-							{!! Form::Label('from', trans('models.fields.from'), ['class'=>'control-label sr-only']) !!}
-							{!! Form::text('from', $dock->get('fechaInicio')->format('d/m/Y'), ['class'=>'form-control', 'placeholder' => trans('models.fields.from') ]) !!}
-						</div>
-						<div class="col-sm-4">
-							{!! Form::Label('until', trans('models.fields.until'), ['class'=>'control-label sr-only']) !!}
-							{!! Form::text('until', $dock->get('fechaFinal')->format('d/m/Y'), ['class'=>'form-control', 'placeholder' => trans('models.fields.until') ]) !!}
-						</div>
-					</div>
-					<hr/>
-					<div class="form-group">
 						{!!Form::Label('beam', trans('models.fields.beam'), ['class'=>'col-sm-2 control-label']) !!}
-						<div class="col-sm-4">
+						<div class="col-sm-2">
 							{!! Form::text('beam', $dock->get('manga'), ['class'=>'form-control']) !!}
 						</div>
-					</div>
-					<div class="form-group">
 						{!!Form::Label('length', trans('models.fields.length'), ['class'=>'col-sm-2 control-label']) !!}
-						<div class="col-sm-4">
+						<div class="col-sm-2">
 							{!! Form::text('length', $dock->get('eslora'), ['class'=>'form-control']) !!}
 						</div>
 					</div>
 					<div class="form-group">
 						{!!Form::Label('draft', trans('models.fields.draft'), ['class'=>'col-sm-2 control-label']) !!}
-						<div class="col-sm-4">
+						<div class="col-sm-2">
 							{!! Form::text('draft', $dock->get('calado'), ['class'=>'form-control']) !!}
+						</div>
+					</div>
+					<hr/>
+					<div class="form-group">
+						{!!Form::Label('image', trans('models.fields.image'), ['class'=>'col-sm-2 control-label']) !!}
+						<div class="col-sm-8">
+							<input name="image" id="image" type="file" class="file" data-show-preview="true">
 						</div>
 					</div>
 					<hr/>
@@ -147,6 +125,60 @@
 							<label for="wifi" class="col-sm-3 control-label control-label-left">
 								{!!Form::checkbox('wifi', 1, $dock->get('wifi')) !!} {{trans('models.fields.wifi')}}
 							</label>
+						</div>
+					</div>
+					<hr/>
+					<div class="form-group">
+						{!!Form::Label('price', trans('models.fields.price') . " (". trans('messages.price-per-day') .")", ['class'=>'col-sm-2 control-label']) !!}
+						<div class="col-sm-3">
+							{!! Form::text('price',  $dock->get('precio'), ['class'=>'form-control']) !!}
+						</div>
+					</div>
+					<div class="form-group">
+						<div class="col-sm-2 control-label"><p>{{ trans('models.fields.available') }}</p></div>
+						<div class="col-sm-4">
+							{!! Form::Label('from', trans('models.fields.from'), ['class'=>'control-label sr-only']) !!}
+							{!! Form::text('from', $dock->get('fechaInicio')->format('d/m/Y'), ['class'=>'form-control', 'placeholder' => trans('models.fields.from') ]) !!}
+						</div>
+						<div class="col-sm-4">
+							{!! Form::Label('until', trans('models.fields.until'), ['class'=>'control-label sr-only']) !!}
+							{!! Form::text('until', $dock->get('fechaFinal')->format('d/m/Y'), ['class'=>'form-control', 'placeholder' => trans('models.fields.until') ]) !!}
+						</div>
+					</div>
+					<hr/>
+					<div class="panel panel-default">
+						<div class="panel-heading">
+							<h3 class="panel-title"><i class="fa fa-calendar-o"></i> {{trans('models.bookings')}} </h3>
+						</div>
+						<div class="panel-body">
+							@if (count($bookings) > 0)
+							<!-- Table -->
+							<table class="table table-striped table-hover">
+								<thead>
+									<tr>
+										<th>{{strtolower(trans('models.fields.from'))}}</th>
+										<th>{{strtolower(trans('models.fields.until'))}}</th>
+										<th>{{strtolower(trans('models.fields.price'))}}</th>
+										<th>{{strtolower(trans('models.fields.confirmed'))}}</th>
+										<th>{{strtolower(trans('models.fields.created'))}}</th>
+									</tr>
+								</thead>
+								<tbody>
+									@foreach ($bookings as $booking)
+									<tr>
+										<td>{{ $booking->get('fechaInicio')->format('Y-m-d') }}</td>
+										<td>{{ $booking->get('fechaFinal')->format('Y-m-d') }}</td>
+										<td>{{ $booking->get('precioTotal') }}€</td>
+										<td>{{ $booking->get('confirmado') ? trans('messages.yes') : trans('messages.no') }}</td>
+										<td class="small">{{ $booking->getCreatedAt()->format('Y-m-d H:i:s') }}</td>
+										<td><a class="btn btn-xs btn-primary" href={{ route('bookings.edit', $booking->getObjectId()) }}><i class="fa fa-pencil-square-o"></i></a></td>
+									</tr>
+									@endforeach
+								</tbody>
+							</table>
+							@else
+							<p class="alert alert-info">{{trans('messages.docks.no-bookings')}}</p>
+							@endif
 						</div>
 					</div>
 					<hr/>
