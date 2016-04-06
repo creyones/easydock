@@ -62,6 +62,7 @@ return [
 		'default-services' => 'Services will be set with the related port services values. If you want to modify them, please edit the dock once created.',
 		'no-products' => 'There are no products related with this dock',
 		'no-bookings' => 'There are no bookings related with this dock',
+		'block' => 'Block dates',
 	],
 	'bookings' => [
 		'created' => 'The booking has been succesfully created.',

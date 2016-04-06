@@ -36,5 +36,5 @@ return [
 	'edit_booking' => 'Editar Reserva',
 	'create_booking' => 'Crear Reserva',
 	'delete_booking' => 'Borrar Reserva',
-
+	'calendar' => 'Calendario',
 ];

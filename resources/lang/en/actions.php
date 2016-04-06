@@ -20,6 +20,8 @@ return [
 	'edit' => 'Edit',
 	'add' => 'Add',
 	'back' => 'Back',
+	'block' => 'Block',
+	'unblock' => 'Unblock',
 	'contact' => 'Contact',
 	'login' => 'Login',
 	'logout' => 'Logout',

@@ -150,7 +150,7 @@ return [
 		'App\Providers\FontAwesomeServiceProvider',
 		'App\Providers\DataTablesServiceProvider',
 		'App\Providers\FileInputServiceProvider',
-
+		'App\Providers\FullCalendarServiceProvider',
 		/*
 		*
 		*/

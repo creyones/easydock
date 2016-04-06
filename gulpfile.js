@@ -26,6 +26,8 @@ elixir(function(mix) {
       'vendor/datatables/jquery.dataTables.js',
       'vendor/datatables/dataTables.bootstrap.js',
       'vendor/kartik-v/fileinput.js',
-      'vendor/kartik-v/fileinput_locale_es.js'
+      'vendor/kartik-v/fileinput_locale_es.js',
+      'vendor/moment/moment.min.js',
+      'vendor/fullcalendar/fullcalendar.min.js',
     ], null, 'public/js')
 });

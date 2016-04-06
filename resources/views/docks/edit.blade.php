@@ -12,7 +12,7 @@
 				@include('errors.list')
 				@if (Auth::user()->hasRole('owner') || Auth::user()->hasRole('admin') || Auth::user()->hasRole('provider'))
 				<div class="col-sm-12">
-					<p class="lead"><i class="fa fa-edit fa-lg"></i> {{trans('views.edit_dock')}}</p></li>
+					<p class="lead"><i class="fa fa-edit fa-lg"></i> {{trans('views.edit_dock')}}</p>
 					{!! Form::model($dock, ['method'=> 'PATCH', 'action' => ['DocksController@update', $dock->getObjectId()], 'class' =>'form-horizontal','role'=>'form', 'files' => true]) !!}
 					<div class="form-group">
 						{!!Form::Label('created', trans('models.fields.created'), ['class'=>'col-sm-2 control-label']) !!}
@@ -129,12 +129,6 @@
 					</div>
 					<hr/>
 					<div class="form-group">
-						{!!Form::Label('price', trans('models.fields.price') . " (". trans('messages.price-per-day') .")", ['class'=>'col-sm-2 control-label']) !!}
-						<div class="col-sm-3">
-							{!! Form::text('price',  $dock->get('precio'), ['class'=>'form-control']) !!}
-						</div>
-					</div>
-					<div class="form-group">
 						<div class="col-sm-2 control-label"><p>{{ trans('models.fields.available') }}</p></div>
 						<div class="col-sm-4">
 							{!! Form::Label('from', trans('models.fields.from'), ['class'=>'control-label sr-only']) !!}
@@ -145,40 +139,10 @@
 							{!! Form::text('until', $dock->get('fechaFinal')->format('d/m/Y'), ['class'=>'form-control', 'placeholder' => trans('models.fields.until') ]) !!}
 						</div>
 					</div>
-					<hr/>
-					<div class="panel panel-default">
-						<div class="panel-heading">
-							<h3 class="panel-title"><i class="fa fa-calendar-o"></i> {{trans('models.bookings')}} </h3>
-						</div>
-						<div class="panel-body">
-							@if (count($bookings) > 0)
-							<!-- Table -->
-							<table class="table table-striped table-hover">
-								<thead>
-									<tr>
-										<th>{{strtolower(trans('models.fields.from'))}}</th>
-										<th>{{strtolower(trans('models.fields.until'))}}</th>
-										<th>{{strtolower(trans('models.fields.price'))}}</th>
-										<th>{{strtolower(trans('models.fields.confirmed'))}}</th>
-										<th>{{strtolower(trans('models.fields.created'))}}</th>
-									</tr>
-								</thead>
-								<tbody>
-									@foreach ($bookings as $booking)
-									<tr>
-										<td>{{ $booking->get('fechaInicio')->format('Y-m-d') }}</td>
-										<td>{{ $booking->get('fechaFinal')->format('Y-m-d') }}</td>
-										<td>{{ $booking->get('precioTotal') }}€</td>
-										<td>{{ $booking->get('confirmado') ? trans('messages.yes') : trans('messages.no') }}</td>
-										<td class="small">{{ $booking->getCreatedAt()->format('Y-m-d H:i:s') }}</td>
-										<td><a class="btn btn-xs btn-primary" href={{ route('bookings.edit', $booking->getObjectId()) }}><i class="fa fa-pencil-square-o"></i></a></td>
-									</tr>
-									@endforeach
-								</tbody>
-							</table>
-							@else
-							<p class="alert alert-info">{{trans('messages.docks.no-bookings')}}</p>
-							@endif
+					<div class="form-group">
+						{!!Form::Label('price', trans('models.fields.price') . " (". trans('messages.price-per-day') .")", ['class'=>'col-sm-2 control-label']) !!}
+						<div class="col-sm-3">
+							{!! Form::text('price',  $dock->get('precio'), ['class'=>'form-control']) !!}
 						</div>
 					</div>
 					<hr/>
@@ -200,6 +164,7 @@
 		</div>
 	</div>
 </div>
-@include('partials.daterange')
+@include('partials.daterange', array('from' => '#from', "until" => "#until", "past" => false))
+@include('partials.daterange', array('from' => '#block-from', "until" => "#block-until", "past" => true ))
 @include('partials.fileinput-preview', array('item' => 'image', 'preview' => $dock->get('image')->getURL(), 'caption' => trans('models.fields.image')))
 @endsection

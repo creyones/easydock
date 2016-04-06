@@ -106,5 +106,5 @@
 		</div>
 	</div>
 </div>
-@include('partials.daterange')
+@include('partials.daterange', array('from' => '#from', "until" => "#until", "past" => false))
 @endsection

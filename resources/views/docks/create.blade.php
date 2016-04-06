@@ -166,6 +166,6 @@
 		</div>
 	</div>
 </div>
-@include('partials.daterange')
+@include('partials.daterange', array('from' => '#from', "until" => "#until", "past" => false))
 @include('partials.fileinput', array('item' => 'image'))
 @endsection

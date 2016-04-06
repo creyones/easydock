@@ -33,6 +33,7 @@
         "App\\Providers\\FontAwesomeServiceProvider",
         "App\\Providers\\DataTablesServiceProvider",
         "App\\Providers\\FileInputServiceProvider",
+        "App\\Providers\\FullCalendarServiceProvider",
         "Zizaco\\Entrust\\EntrustServiceProvider",
         "Intervention\\Image\\ImageServiceProvider"
     ],
@@ -57,6 +58,7 @@
         "App\\Providers\\FontAwesomeServiceProvider",
         "App\\Providers\\DataTablesServiceProvider",
         "App\\Providers\\FileInputServiceProvider",
+        "App\\Providers\\FullCalendarServiceProvider",
         "Zizaco\\Entrust\\EntrustServiceProvider",
         "Intervention\\Image\\ImageServiceProvider"
     ],

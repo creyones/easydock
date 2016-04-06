@@ -75,6 +75,7 @@ return [
 		'requested' => 'Solicitado',
 		'booked' => 'Reservado',
 		'confirmed' => 'Confirmado',
+		'blocked' => 'Bloqueado',
 		'created' => 'Creado',
 		'updated' => 'Modificado',
 		'verified' => 'Verificado',

@@ -77,7 +77,7 @@
 		</div>
 	</div>
 </div>
-@include('partials.daterange')
+@include('partials.daterange', array('from' => '#from', "until" => "#until", "past" => false))
 <script type="text/javascript">
 	$("#image").fileinput({
 		uploadUrl: "{{url("/")}}/tmp/", // server upload action

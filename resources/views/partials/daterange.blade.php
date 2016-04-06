@@ -2,12 +2,14 @@
 	// When the document is ready
 	$(document).ready(function () {
 
-    $('#from').datepicker({
+    $('{{$from}}').datepicker({
       language: "{{App::getLocale()}}",
 			weekStart: 1,
       format: "dd/mm/yyyy",
+			@if ($past != true)
       startDate: "+1d",
       endDate: "+365d",
+			@endif
 
     })
 		.on('changeDate', function(selected){
@@ -16,12 +18,14 @@
 		        $('#until').datepicker('setStartDate', startDate);
 		    });
 
-    $('#until').datepicker({
+    $('{{$until}}').datepicker({
       language: "{{App::getLocale()}}",
 			weekStart: 1,
       format: "dd/mm/yyyy",
+			@if ($past != true)
       startDate: "+1d",
-      endDate: "+365d"
+      endDate: "+365d",
+			@endif
     });
 
 	});

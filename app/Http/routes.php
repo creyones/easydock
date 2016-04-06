@@ -25,6 +25,9 @@ Route::patch('profile', array('as' => 'profile.update', 'uses' => 'ProfileContro
 // Route::get('users/{id}/delete', array('as' => 'deleteUser', 'uses' => 'UsersController@delete'));
 // Route::post('users', array('as' => 'storeUser', 'uses' => 'UsersController@store'));
 
+Route::patch('docks/{dock}/block', array('as'=>'docks.block', 'uses'=>'DocksController@block'));
+Route::patch('docks/{dock}/unblock', array('as'=>'docks.unblock', 'uses'=>'DocksController@unblock'));
+
 Route::resource('users', 'UsersController');
 Route::resource('providers', 'ProvidersController');
 Route::resource('ports', 'PortsController');

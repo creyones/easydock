@@ -55,7 +55,7 @@
 							<h3 class="panel-title">{{trans('views.bookings')}}</h3>
 						</div>
 						<div class="panel-body">
-							<p class="lead"><i class="fa fa-calendar-o fa-2x"></i> <span class="text-success"> {{($bookings ? $bookings->count() : '0')}} </span> {{trans('models.bookings')}}</p>
+							<p class="lead"><i class="fa fa-bookmark-o fa-2x"></i> <span class="text-success"> {{($bookings ? $bookings->count() : '0')}} </span> {{trans('models.bookings')}}</p>
 						</div>
 					</div>
 				</div>

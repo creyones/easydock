@@ -21,6 +21,8 @@ return [
 	'edit' => 'Editar',
 	'add' => 'Añadir',
 	'back' => 'Volver',
+	'block' => 'Bloquear',
+	'unblock' => 'Desbloquear',
 	'contact' => 'Contactar',
 	'login' => 'Acceder',
 	'logout' => 'Salir',

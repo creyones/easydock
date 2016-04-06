@@ -62,6 +62,7 @@ return [
 		'default-services' => 'Los servicios del atraque se fijarán con los que tenga el puerto. Si quiere cambiarlos, edite el atraque una vez creado.',
 		'no-products' => 'No hay ningun producto relacionado con este atraque',
 		'no-bookings' => 'No hay ninguna solicitud de reserva relacionada con este atraque',
+		'block' => 'Bloquear fechas',
 	],
 	'bookings' => [
 		'created' => 'La reserva ha sido creado correctamente.',

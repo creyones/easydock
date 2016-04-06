@@ -36,5 +36,6 @@ return [
 	'edit_booking' => 'Edit Booking',
 	'create_booking' => 'Create Booking',
 	'delete_booking' => 'Delete Booking',
+	'calendar' => 'Calendar',
 
 ];

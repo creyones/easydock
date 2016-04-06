@@ -8,6 +8,7 @@ use App\Models\User;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Input;
 //use Illuminate\Support\Facades\Request;
 use Intervention\Image\Facades\Image;
 
@@ -154,7 +155,7 @@ class DocksController extends Controller {
 			$thumbnail = ParseFile::createFromFile($thumbpath, basename($thumbpath));
 
 			// Carbonize dates
-			$begin = createDate($request->get('from'));
+			$start = createDate($request->get('from'));
 			$end = createDate($request->get('until'));
 			$dock->set('image', $image);
 
@@ -165,7 +166,7 @@ class DocksController extends Controller {
 		$dock->set('name', $request->get('name'));
 		$dock->set('detailText', $request->get('details'));
 		$dock->set('codigo', $request->get('code'));
-		$dock->set('fechaInicio', $begin);
+		$dock->set('fechaInicio', $start);
 		$dock->set('fechaFinal', $end);
 		$dock->set('precio', floatval($request->get('price')));
 		$dock->set('thumbnail', $thumbnail);
@@ -202,7 +203,7 @@ class DocksController extends Controller {
 			$dock->save();
 
 			//Create related products
-			$this->createProducts($dock, $begin, $end, floatval($request->get('price')));
+			$this->createProducts($dock, $start, $end, floatval($request->get('price')));
 
 			return redirect('docks')->with([
 				'flash_message' => trans('messages.docks.created'),
@@ -220,7 +221,7 @@ class DocksController extends Controller {
 
 		if ($current_user->hasRole('admin') || $current_user->hasRole('owner') || $current_user->hasRole('provider')){
 
-			//Query Port
+			//Query Dock
 			$query = new ParseQuery('Atraques');
 
 			try {
@@ -283,7 +284,7 @@ class DocksController extends Controller {
 				'draft' => 'required',
 			]);
 
-			//Query Port
+			//Query Dock
 			$query = new ParseQuery('Atraques');
 			//Get Port by id
 			$dock = $query->get($id);
@@ -410,13 +411,122 @@ class DocksController extends Controller {
 
 	}
 
+	public function unblock($id, Request $request)
+	{
+		$current_user = Auth::user();
+
+		if ($current_user->hasRole('admin') || $current_user->hasRole('owner') || $current_user->hasRole('provider')){
+
+			$this->validate($request, [
+				'block-from' => 'required',
+				'block-until' => 'required',
+			]);
+
+			//Query Dock
+			$query = new ParseQuery('Atraques');
+			//Get Dock by id
+			$dock = $query->get($id);
+			//New date
+			$from = createDate($request->get('block-from'));
+			$until = createDate($request->get('block-until'));
+
+			$products = $this->getRelatedProducts($dock, $from, $until);
+
+			foreach($products as $product)
+			{
+				if ($product->get('bloqueado')) {
+					$product->set('reservado', false);
+					$product->set('bloqueado', false);
+				}
+				else if ($product->get('confirmado')) {
+					return redirect()->back()->withErrors(trans('messages.docks.not-unblocked'));
+				}
+				try {
+					//Update product in Parse
+					$product->save();
+
+				} catch (ParseException $ex) {
+					if ($ex->getCode() == 101){
+						return redirect()->back()->withErrors(trans('messages.products.not-found'));
+					}
+					else {
+						return redirect()->back()->withErrors(trans('parse.save') . $ex->getMessage());
+					}
+				}
+			}
+			return redirect('docks')->with([
+				'flash_message' => trans('messages.docks.updated'),
+				'flash_message_important' => true
+				]);
+		}
+		else
+		{
+			return redirect('docks', $id);
+		}
+	}
+	public function block($id, Request $request)
+	{
+		$current_user = Auth::user();
+
+		if ($current_user->hasRole('admin') || $current_user->hasRole('owner') || $current_user->hasRole('provider')){
+
+			$this->validate($request, [
+				'block-from' => 'required',
+				'block-until' => 'required',
+			]);
+
+			//Query Dock
+			$query = new ParseQuery('Atraques');
+			//Get Dock by id
+			$dock = $query->get($id);
+
+			//New date
+			$from = createDate($request->get('block-from'));
+			$until = createDate($request->get('block-until'));
+
+			$products = $this->getRelatedProducts($dock, $from, $until);
+
+			foreach($products as $product)
+			{
+				if ($product->get('confirmado') == false and $product->get('reservado') == false) {
+					$product->set('reservado', true);
+					$product->set('bloqueado', true);
+				}
+				else {
+					return redirect()->back()->withErrors(trans('messages.docks.not-blocked'));
+				}
+				try {
+					//Update product in Parse
+					$product->save();
+
+				} catch (ParseException $ex) {
+					if ($ex->getCode() == 101){
+						return redirect()->back()->withErrors(trans('messages.products.not-found'));
+					}
+					else {
+						return redirect()->back()->withErrors(trans('parse.save') . $ex->getMessage());
+					}
+				}
+			}
+			return redirect('docks')->with([
+				'flash_message' => trans('messages.docks.updated'),
+				'flash_message_important' => true
+				]);
+		}
+		else
+		{
+			return redirect('docks', $id);
+		}
+
+	}
+
 	public function destroy($id)
 	{
 		$current_user = Auth::user();
 
 		if ($current_user->hasRole('admin') || $current_user->hasRole('owner')){
 
-			//Query Port
+			//Query Dock
 			$query = new ParseQuery('Atraques');
 			//Get Port by id
 			$dock = $query->get($id);
@@ -537,9 +647,9 @@ class DocksController extends Controller {
 
 	}
 
-	private function createProducts($dock, $begin, $end, $price)
+	private function createProducts($dock, $start, $end, $price)
 	{
-		$day = $begin;
+		$day = $start;
 		do
 		{
 			$product = new ParseObject('Productos');
@@ -558,14 +668,14 @@ class DocksController extends Controller {
 
 	}
 
-	private function destroyProducts($dock, $begin = null, $end = null)
+	private function destroyProducts($dock, $start = null, $end = null)
 	{
 
 		$q = new ParseQuery('Productos');
 		$q->equalTo('atraqueRelation', $dock);
 
-		if($begin) {
-			$q->greaterThanOrEqualTo('fecha', $begin);
+		if($start) {
+			$q->greaterThanOrEqualTo('fecha', $start);
 		}
 		if ($end) {
 			$q->lessThanOrEqualTo('fecha', $end);
@@ -578,6 +688,24 @@ class DocksController extends Controller {
 			$product->destroy();
 		}
 
+	}
+
+	private function getRelatedProducts($dock, $start, $end)
+	{
+
+		//Query related products in date range
+		$q = new ParseQuery('Productos');
+		$q->equalTo('atraqueRelation', $dock);
+
+		if($start) {
+			$q->greaterThanOrEqualTo('fecha', $start);
+		}
+		if ($end) {
+			$q->lessThanOrEqualTo('fecha', $end);
+		}
+		$products = $q->find();
+
+		return $products;
 	}
 
 }

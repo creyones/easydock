@@ -85,14 +85,37 @@
 			</div>
 			<div class="panel panel-default">
 				<div class="panel-heading">
-					<h3 class="panel-title"><i class="fa fa-calendar-o"></i> {{trans('models.bookings')}} </h3>
+					<h3 class="panel-title"><i class="fa fa-calendar-o"></i> {{trans('views.calendar')}} </h3>
+				</div>
+				<div class="panel-body small">
+					<div id='calendar'></div>
+				</div>
+				<div class="panel-footer">
+					<div class="row">
+						<div class="col-sm-12">
+							<div class="pull-right">
+								{!! Form::model($dock, ['method'=> 'PATCH', 'action' => ['DocksController@block', $dock->getObjectId()], 'class' =>'form-inline','role'=>'form', 'name' => 'form-calendar']) !!}
+								{!! Form::text('block-from', '', ['class'=>'hidden']) !!}
+								{!! Form::text('block-until', '', ['class'=>'hidden']) !!}
+								{!! Form::submit(trans('actions.block'),['class' => 'btn btn-sm btn-default', 'id' => 'block']) !!}
+								{!! Form::submit(trans('actions.unblock'),['class' => 'btn btn-sm btn-default', 'id' => 'unblock']) !!}
+								{!! Form::close() !!}
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+			<div class="panel panel-default">
+				<div class="panel-heading">
+					<h3 class="panel-title"><i class="fa fa-bookmark-o"></i> {{trans('models.bookings')}} </h3>
 				</div>
 				<div class="panel-body">
 					@if (count($bookings) > 0)
 					<!-- Table -->
-					<table class="table table-striped table-hover">
+					<table class="table table-striped table-hover small">
 						<thead>
 							<tr>
+								<th>{{strtolower(trans('models.fields.id'))}}</th>
 								<th>{{strtolower(trans('models.fields.from'))}}</th>
 								<th>{{strtolower(trans('models.fields.until'))}}</th>
 								<th>{{strtolower(trans('models.fields.price'))}}</th>
@@ -103,52 +126,18 @@
 						<tbody>
 							@foreach ($bookings as $booking)
 							<tr>
+								<td>{{ $booking->getObjectId() }}</td>
 								<td>{{ $booking->get('fechaInicio')->format('Y-m-d') }}</td>
 								<td>{{ $booking->get('fechaFinal')->format('Y-m-d') }}</td>
 								<td>{{ $booking->get('precioTotal') }}€</td>
 								<td>{{ $booking->get('confirmado') ? trans('messages.yes') : trans('messages.no') }}</td>
-								<td class="small">{{ $booking->getCreatedAt()->format('Y-m-d H:i:s') }}</td>
-								<td><a class="btn btn-xs btn-primary" href={{ route('bookings.edit', $booking->getObjectId()) }}><i class="fa fa-pencil-square-o"></i></a></td>
+								<td class="small">{{ $booking->getCreatedAt()->format('Y-m-d H:i') }}</td>
 							</tr>
 							@endforeach
 						</tbody>
 					</table>
 					@else
 					<p class="alert alert-info">{{trans('messages.docks.no-bookings')}}</p>
-					@endif
-				</div>
-			</div>
-			<div class="panel panel-default">
-				<div class="panel-heading">
-					<h3 class="panel-title"><i class="fa fa-bookmark-o"></i> {{trans('models.products')}} </h3>
-				</div>
-				<div class="panel-body">
-					@if (count($products) > 0)
-					<!-- Table -->
-					<table class="table table-striped table-hover">
-						<thead>
-							<tr>
-								<th>{{strtolower(trans('models.fields.date'))}}</th>
-								<th>{{strtolower(trans('models.fields.price'))}}</th>
-								<th>{{strtolower(trans('models.fields.booked'))}}</th>
-								<th>{{strtolower(trans('models.fields.confirmed'))}}</th>
-								<th>{{strtolower(trans('models.fields.created'))}}</th>
-							</tr>
-						</thead>
-						<tbody>
-							@foreach ($products as $product)
-							<tr>
-								<td>{{ $product->get('fecha')->format('Y-m-d') }}</td>
-								<td>{{ $product->get('precio') }}€</td>
-								<td>{{ $product->get('reservado') ? trans('messages.yes') : trans('messages.no')  }}</td>
-								<td>{{ $product->get('confirmado') ? trans('messages.yes') : trans('messages.no') }}</td>
-								<td class="small">{{ $product->getCreatedAt()->format('Y-m-d H:i:s') }}</td>
-							</tr>
-							@endforeach
-						</tbody>
-					</table>
-					@else
-					<p class="alert alert-info">{{trans('messages.docks.no-products')}}</p>
 					@endif
 				</div>
 			</div>
@@ -165,4 +154,45 @@
 		</div>
 	</div>
 </div>
+
+<script>
+	$(document).ready(function() {
+		@foreach ($bookings as $booking)
+		var newEvent = {
+			allDay: true,
+			start: moment('{{$booking->get("fechaInicio")->format("d/m/Y")}}', 'DD/MM/YYYY'),
+			end: moment('{{$booking->get("fechaFinal")->format("d/m/Y")}}', 'DD/MM/YYYY').add(1, 'days'),
+			title: '{{$booking->getObjectId()}}',
+			@if ($booking->get('confirmado'))
+			color: '#18bc9c',
+			backgroundColor: '#18bc9c',
+			@else
+			color: '#f0ad4e',
+			backgroundColor: '#f0ad4e',
+			@endif
+		};
+		$('#calendar').fullCalendar('renderEvent', newEvent , 'stick');
+		//console.log(newEvent);
+		@endforeach
+	});
+</script>
+
+<script>
+	$(document).ready(function() {
+		@foreach ($products as $product)
+			@if ($product->get('bloqueado'))
+				var newEvent = {
+					start: moment('{{$product->get("fecha")->format("d/m/Y")}}', 'DD/MM/YYYY'),
+					allDay: true,
+					title: '{{trans("models.fields.blocked")}}',
+					color: '#e74c3c',
+					backgroundColor: '#e74c3c',
+        };
+				$('#calendar').fullCalendar( 'renderEvent', newEvent , 'stick');
+			@endif
+		@endforeach
+	});
+</script>
+
+@include('partials.fullcalendar-block')
 @endsection

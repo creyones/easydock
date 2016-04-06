@@ -9706,6 +9706,9 @@ table.dataTable tbody td {
 .file-footer-buttons {
   display: none;
 }
+.fc-left h2 {
+  font-size: 20px;
+}
 
 /*# sourceMappingURL=app.css.map */
 /*# sourceMappingURL=all.css.map */
