@@ -14,13 +14,13 @@ return [
 	*/
 
 	'users' => 'Usuarios',
-	'providers' => 'Vendedores',
+	'providers' => 'Clientes',
 	'ports' => 'Puertos',
 	'docks' => 'Atraques',
 	'bookings' => 'Reservas',
 	'products' => 'Productos',
 	'user' => 'Usuario',
-	'provider' => 'Vendedor',
+	'provider' => 'Cliente',
 	'port' => 'Puerto',
 	'dock' => 'Atraque',
 	'booking' => 'Reserva',
