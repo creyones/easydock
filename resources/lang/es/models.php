@@ -83,6 +83,7 @@ return [
 		'status' => 'Estado',
 		'available' => 'Disponibilidad',
 		'products' => 'Productos',
+		'offer' => 'Ofertas',
 	],
 
 ];

@@ -93,6 +93,12 @@
 						</div>
 					@endforeach
 					<div class="form-group">
+						{!!Form::Label('offer', trans('models.fields.offer'), ['class'=>'col-sm-2 control-label']) !!}
+						<div class="col-sm-8">
+							{!! Form::textarea('offer', '', ['class'=>'form-control']) !!}
+						</div>
+					</div>
+					<div class="form-group">
 						<div class="col-sm-8 col-sm-offset-2">
 							{!!Form::submit(trans('actions.save'),['class' => 'btn btn-success']) !!}
 							<a href={{ route('ports.index') }} class="btn btn-default">{{ trans('actions.cancel') }}</a>

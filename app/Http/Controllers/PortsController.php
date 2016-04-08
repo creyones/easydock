@@ -134,6 +134,8 @@ class PortsController extends Controller {
 		$port->set('hoteles', $request->get('accomodation') == '1' ? true : false);
 		$port->set('vigilancia', $request->get('surveillance') == '1' ? true : false);
 		$port->set('wifi', $request->get('wifi') == '1' ? true : false);
+		//Offer description
+		$port->set('oferta', $request->get('offer'));
 
 		try {
 			$port->save();
@@ -213,6 +215,8 @@ class PortsController extends Controller {
 			$port->set('hoteles', $request->get('accomodation') == '1' ? true : false);
 			$port->set('vigilancia', $request->get('surveillance') == '1' ? true : false);
 			$port->set('wifi', $request->get('wifi') == '1' ? true : false);
+			//Offer description
+			$port->set('oferta', $request->get('offer'));
 
 			try {
 				//Update Port in Parse

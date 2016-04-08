@@ -107,6 +107,13 @@
 							<div class="thumbnail"><img src={{$port->get('imagen3') ? $port->get('imagen3')->getURL() : URL::to('/img/camera.png')}} class="img-rounded" alt="Image"></div>
 						</div>
 					</div>
+					<div class="row">
+						<hr/>
+						<div class="col-sm-12">
+							<p><i class="fa fa-file-text-o"></i> <strong>{{trans('models.fields.offer')}}</strong></p>
+							<p> {{$port->get('oferta')}} </p>
+						</div>
+					</div>
 				</div>
 				<div class="panel-footer">
 					<div class="row">

@@ -83,6 +83,7 @@ return [
 		'status' => 'Status',
 		'available' => 'available',
 		'products' => 'Products',
+		'offer' => 'Offers',
 	],
 
 ];
