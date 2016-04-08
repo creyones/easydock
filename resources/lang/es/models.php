@@ -53,6 +53,7 @@ return [
 		'country' => 'País',
 		'latitude' => 'Latitud',
 		'longitude' => 'Longitud',
+		'premium' => 'Premium',
 		'beam' => 'Manga',
 		'length' => 'Eslora',
 		'draft' => 'Calado',

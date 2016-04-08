@@ -41,7 +41,7 @@ class PortsController extends Controller {
 			$query = new ParseQuery('Puertos');
 			$query->select(['name', 'province']);
 			$query->ascending('createdAt');
-			$query->limit(1000);
+			$query->limit(500);
 
 			$ports = $query->find();
 

@@ -4,8 +4,8 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#composer-lock-the-lock-file",
         "This file is @generated automatically"
     ],
-    "hash": "f2ba93cc1a097ad60ba4b414b8b846e0",
-    "content-hash": "7a6874063a028ebe31311db2f3679dcf",
+    "hash": "7c2f3b7aefa2de42c598fd21b6bf4535",
+    "content-hash": "4f868a2987b5c8cecbb88e90035ba4db",
     "packages": [
         {
             "name": "classpreloader/classpreloader",
@@ -1279,12 +1279,12 @@
             "source": {
                 "type": "git",
                 "url": "https://github.com/kartik-v/bootstrap-fileinput.git",
-                "reference": "22184efc859b5319c0652dbfe35bfbadc0a2ff0a"
+                "reference": "d866af325936209258989d3bd17b4fbdb9835a72"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/kartik-v/bootstrap-fileinput/zipball/22184efc859b5319c0652dbfe35bfbadc0a2ff0a",
-                "reference": "22184efc859b5319c0652dbfe35bfbadc0a2ff0a",
+                "url": "https://api.github.com/repos/kartik-v/bootstrap-fileinput/zipball/d866af325936209258989d3bd17b4fbdb9835a72",
+                "reference": "d866af325936209258989d3bd17b4fbdb9835a72",
                 "shasum": ""
             },
             "type": "library",
@@ -1324,7 +1324,7 @@
                 "progress",
                 "upload"
             ],
-            "time": "2016-03-25 07:10:51"
+            "time": "2016-04-06 11:18:59"
         },
         {
             "name": "laravel/framework",
@@ -1807,16 +1807,16 @@
         },
         {
             "name": "parse/php-sdk",
-            "version": "1.0.6",
+            "version": "1.2.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/ParsePlatform/parse-php-sdk.git",
-                "reference": "0171095e85e073400507f2d23caed7fbac0d56bb"
+                "reference": "1f668b97b229829f2ed05e23fd38685cc9e2c62b"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/ParsePlatform/parse-php-sdk/zipball/0171095e85e073400507f2d23caed7fbac0d56bb",
-                "reference": "0171095e85e073400507f2d23caed7fbac0d56bb",
+                "url": "https://api.github.com/repos/ParsePlatform/parse-php-sdk/zipball/1f668b97b229829f2ed05e23fd38685cc9e2c62b",
+                "reference": "1f668b97b229829f2ed05e23fd38685cc9e2c62b",
                 "shasum": ""
             },
             "require": {
@@ -1832,7 +1832,7 @@
             "type": "library",
             "extra": {
                 "branch-alias": {
-                    "dev-master": "1.0-dev"
+                    "dev-master": "1.1-dev"
                 }
             },
             "autoload": {
@@ -1856,7 +1856,7 @@
                 "parse",
                 "sdk"
             ],
-            "time": "2015-02-24 01:54:30"
+            "time": "2016-02-16 15:58:08"
         },
         {
             "name": "psr/http-message",

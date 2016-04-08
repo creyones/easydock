@@ -40,20 +40,24 @@
 					</div>
 					<div class="form-group">
 						{!!Form::Label('province', trans('models.fields.province'), ['class'=>'col-sm-2 control-label']) !!}
-						<div class="col-sm-8">
+						<div class="col-sm-4">
 							{!! Form::select('provinces', $provinces, $port->get('province'), ['class'=>'form-control']) !!}
 						</div>
 					</div>
 					<div class="form-group">
 						{!!Form::Label('latitude', trans('models.fields.latitude'), ['class'=>'col-sm-2 control-label']) !!}
-						<div class="col-sm-4">
+						<div class="col-sm-3">
 							{!! Form::text('latitude', $port->get('latitude'), ['class'=>'form-control']) !!}
+						</div>
+						{!!Form::Label('longitude', trans('models.fields.longitude'), ['class'=>'col-sm-2 control-label']) !!}
+						<div class="col-sm-3">
+							{!! Form::text('longitude', $port->get('longitude'), ['class'=>'form-control']) !!}
 						</div>
 					</div>
 					<div class="form-group">
-						{!!Form::Label('longitude', trans('models.fields.longitude'), ['class'=>'col-sm-2 control-label']) !!}
+						{!!Form::Label('premium', trans('models.fields.premium'), ['class'=>'col-sm-2 control-label']) !!}
 						<div class="col-sm-4">
-							{!! Form::text('longitude', $port->get('longitude'), ['class'=>'form-control']) !!}
+							{!!Form::select('premium', [trans('messages.no'), trans('messages.yes')] , $port->get('premium') ? trans('messages.yes') : trans('messages.no'), ['class'=>'form-control']) !!}
 						</div>
 					</div>
 					<div class="form-group">

@@ -53,6 +53,7 @@ return [
 		'country' => 'Country',
 		'latitude' => 'Latitude',
 		'longitude' => 'Longitude',
+		'premium' => 'Premium',
 		'beam' => 'Beam',
 		'length' => 'Length',
 		'draft' => 'Draft',

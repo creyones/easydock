@@ -25,6 +25,10 @@
 							<p><i class="fa fa-calendar"></i> <strong>{{trans('models.fields.updated')}}</strong></p>
 							<p> {{$port->getUpdatedAt()->format('Y-m-d H:i:s')}} </p>
 						</div>
+						<div class="col-sm-3">
+							<p><i class="fa fa-star"></i> <strong>{{trans('models.fields.premium')}}</strong></p>
+							<p> {{$port->get('premium') ? trans('messages.yes') : trans('messages.no')}} </p>
+						</div>
 					</div>
 					<div class="row">
 						<hr/>
