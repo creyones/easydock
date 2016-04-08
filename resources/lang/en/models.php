@@ -45,7 +45,7 @@ return [
 		'plan' => 'Plan',
 		'profile' => 'Profile',
 		'details' => 'Details',
-		'code' => 'Code',
+		'code' => 'Reference',
 		'date' => 'Date',
 		'from' => 'From',
 		'until' => 'Until',
