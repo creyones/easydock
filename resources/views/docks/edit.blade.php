@@ -64,6 +64,13 @@
 					</div>
 					<hr/>
 					<div class="form-group">
+						{!!Form::Label('image', trans('models.fields.image'), ['class'=>'col-sm-2 control-label']) !!}
+						<div class="col-sm-8">
+							<input name="image" id="image" type="file" class="file" data-show-preview="true">
+						</div>
+					</div>
+					<hr/>
+					<div class="form-group">
 						{!!Form::Label('beam', trans('models.fields.beam'), ['class'=>'col-sm-2 control-label']) !!}
 						<div class="col-sm-2">
 							{!! Form::text('beam', $dock->get('manga'), ['class'=>'form-control']) !!}
@@ -81,9 +88,20 @@
 					</div>
 					<hr/>
 					<div class="form-group">
-						{!!Form::Label('image', trans('models.fields.image'), ['class'=>'col-sm-2 control-label']) !!}
-						<div class="col-sm-8">
-							<input name="image" id="image" type="file" class="file" data-show-preview="true">
+						<div class="col-sm-2 control-label"><p>{{ trans('models.fields.available') }}</p></div>
+						<div class="col-sm-4">
+							{!! Form::Label('from', trans('models.fields.from'), ['class'=>'control-label sr-only']) !!}
+							{!! Form::text('from', $dock->get('fechaInicio')->format('d/m/Y'), ['class'=>'form-control', 'placeholder' => trans('models.fields.from') ]) !!}
+						</div>
+						<div class="col-sm-4">
+							{!! Form::Label('until', trans('models.fields.until'), ['class'=>'control-label sr-only']) !!}
+							{!! Form::text('until', $dock->get('fechaFinal')->format('d/m/Y'), ['class'=>'form-control', 'placeholder' => trans('models.fields.until') ]) !!}
+						</div>
+					</div>
+					<div class="form-group">
+						{!!Form::Label('price', trans('models.fields.price') . " (". trans('messages.price-per-day') .")", ['class'=>'col-sm-2 control-label']) !!}
+						<div class="col-sm-3">
+							{!! Form::text('price',  $dock->get('precio'), ['class'=>'form-control']) !!}
 						</div>
 					</div>
 					<hr/>
@@ -129,20 +147,9 @@
 					</div>
 					<hr/>
 					<div class="form-group">
-						<div class="col-sm-2 control-label"><p>{{ trans('models.fields.available') }}</p></div>
-						<div class="col-sm-4">
-							{!! Form::Label('from', trans('models.fields.from'), ['class'=>'control-label sr-only']) !!}
-							{!! Form::text('from', $dock->get('fechaInicio')->format('d/m/Y'), ['class'=>'form-control', 'placeholder' => trans('models.fields.from') ]) !!}
-						</div>
-						<div class="col-sm-4">
-							{!! Form::Label('until', trans('models.fields.until'), ['class'=>'control-label sr-only']) !!}
-							{!! Form::text('until', $dock->get('fechaFinal')->format('d/m/Y'), ['class'=>'form-control', 'placeholder' => trans('models.fields.until') ]) !!}
-						</div>
-					</div>
-					<div class="form-group">
-						{!!Form::Label('price', trans('models.fields.price') . " (". trans('messages.price-per-day') .")", ['class'=>'col-sm-2 control-label']) !!}
-						<div class="col-sm-3">
-							{!! Form::text('price',  $dock->get('precio'), ['class'=>'form-control']) !!}
+						{!!Form::Label('offer', trans('models.fields.offer'), ['class'=>'col-sm-2 control-label']) !!}
+						<div class="col-sm-8">
+							{!! Form::textarea('offer', $dock->get('oferta'), ['class'=>'form-control']) !!}
 						</div>
 					</div>
 					<hr/>

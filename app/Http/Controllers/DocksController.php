@@ -195,6 +195,8 @@ class DocksController extends Controller {
 		$dock->set('hoteles', $port->get('hoteles'));
 		$dock->set('vigilancia', $port->get('vigilancia'));
 		$dock->set('wifi', $port->get('wifi'));
+		//Offer text
+		$dock->set('oferta', $port->get('oferta'));
 
 		try {
 
@@ -306,6 +308,8 @@ class DocksController extends Controller {
 			$dock->set('hoteles', $request->get('accomodation') == '1' ? true : false);
 			$dock->set('vigilancia', $request->get('surveillance') == '1' ? true : false);
 			$dock->set('wifi', $request->get('wifi') == '1' ? true : false);
+			//Offer text
+			$dock->set('oferta', $request->get('offer'));
 
 			//Check if date has changed
 

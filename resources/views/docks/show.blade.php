@@ -28,46 +28,62 @@
 					</div>
 					<div class="row">
 						<hr/>
-						<div class="col-sm-6">
+						<div class="col-sm-4">
+							<div class="thumbnail"><img src={{$dock->get('image')->getURL()}} class="img-rounded" alt="Image"></div>
+						</div>
+						<div class="col-sm-4">
 							<p><i class="fa fa-file-text-o"></i> <strong>{{trans('models.fields.code')}}</strong></p>
 							<p> {{$dock->get('codigo')}} </p>
 							<p><i class="fa fa-file-text-o"></i> <strong>{{trans('models.fields.name')}}</strong></p>
 							<p> {{$dock->get('name')}} </p>
 							<p><i class="fa fa-file-text-o"></i> <strong>{{trans('models.fields.details')}}</strong></p>
 							<p> {{$dock->get('detailText')}} </p>
-							<p><i class="fa fa-money"></i> <strong>{{trans('models.fields.price')}}</strong></p>
-							<p> {{$dock->get('precio')}} {{trans('messages.price-per-day')}}</p>
-							<p><i class="fa fa-calendar"></i> <strong>{{trans('models.fields.available')}}</strong></p>
-							<p>{{trans('models.fields.from')}}: <span>{{$dock->get('fechaInicio')->format('d/m/Y')}}</span></p>
-							<p>{{trans('models.fields.until')}}: <span>{{$dock->get('fechaFinal')->format('d/m/Y')}}</span></p>
 						</div>
-						<div class="col-sm-3">
+						<div class="col-sm-4">
+							<p><i class="fa fa-ship"></i> <strong>{{trans('models.port')}}</strong></p>
+							<p> {{$port->get('name')}} ({{$port->get('province')}}) </p>
+							<p><i class="fa fa-user"></i> <strong>{{trans('models.user')}}</strong></p>
+							<p> {{$provider->get('username')}} </p>
+						</div>
+					</div>
+					<div class="row">
+						<div class="col-sm-4">
 							<p><i class="fa fa-file-text-o"></i> <strong>{{trans('models.fields.properties')}}</strong></p>
 							<ul class="list-unstyled">
 								<li>{{trans('models.fields.beam')}}:{{$dock->get('manga')}}</li>
 								<li>{{trans('models.fields.length')}}:{{$dock->get('eslora')}}</li>
 								<li>{{trans('models.fields.draft')}}:{{$dock->get('calado')}}</li>
 							</ul>
+						</div>
+						<div class="col-sm-4">
+							<p><i class="fa fa-calendar"></i> <strong>{{trans('models.fields.available')}}</strong></p>
+							<p>{{trans('models.fields.from')}}: <span>{{$dock->get('fechaInicio')->format('d/m/Y')}}</span></p>
+							<p>{{trans('models.fields.until')}}: <span>{{$dock->get('fechaFinal')->format('d/m/Y')}}</span></p>
+						</div>
+						<div class="col-sm-4">
+							<p><i class="fa fa-money"></i> <strong>{{trans('models.fields.price')}}</strong></p>
+							<p> {{$dock->get('precio')}} {{trans('messages.price-per-day')}}</p>
+						</div>
+					</div>
+					<div class="row">
+						<div class="col-sm-12">
 							<p><i class="fa fa-list"></i> <strong>{{trans('models.fields.services')}}</strong></p>
-							<ul class="list-unstyled">
-								<li>{{trans('models.fields.water')}}:{{$dock->get('agua') ? trans('messages.yes') : trans('messages.no') }}</li>
-								<li>{{trans('models.fields.power')}}:{{$dock->get('electricidad') ? trans('messages.yes') : trans('messages.no') }}</li>
-								<li>{{trans('models.fields.gas')}}:{{$dock->get('gasolinera') ? trans('messages.yes') : trans('messages.no') }}</li>
-								<li>{{trans('models.fields.accomodation')}}:{{$dock->get('hoteles') ? trans('messages.yes') : trans('messages.no') }}</li>
-								<li>{{trans('models.fields.naval')}}:{{$dock->get('marineros') ? trans('messages.yes') : trans('messages.no') }}</li>
-								<li>{{trans('models.fields.radio')}}:{{$dock->get('radio') ? trans('messages.yes') : trans('messages.no') }}</li>
-								<li>{{trans('models.fields.restaurant')}}:{{$dock->get('restaurantes') ? trans('messages.yes') : trans('messages.no') }}</li>
-								<li>{{trans('models.fields.locker-room')}}:{{$dock->get('vestuarios') ? trans('messages.yes') : trans('messages.no') }}</li>
-								<li>{{trans('models.fields.surveillance')}}:{{$dock->get('vigilancia') ? trans('messages.yes') : trans('messages.no') }}</li>
-								<li>{{trans('models.fields.wifi')}}:{{$dock->get('wifi') ? trans('messages.yes') : trans('messages.no') }}</li>
+							<ul class="list-unstyled list-inline">
+								<li>{{trans('models.fields.water')}}: {{$dock->get('agua') ? trans('messages.yes') : trans('messages.no') }}</li>
+								<li>{{trans('models.fields.power')}}: {{$dock->get('electricidad') ? trans('messages.yes') : trans('messages.no') }}</li>
+								<li>{{trans('models.fields.gas')}}: {{$dock->get('gasolinera') ? trans('messages.yes') : trans('messages.no') }}</li>
+								<li>{{trans('models.fields.accomodation')}}: {{$dock->get('hoteles') ? trans('messages.yes') : trans('messages.no') }}</li>
+								<li>{{trans('models.fields.naval')}}: {{$dock->get('marineros') ? trans('messages.yes') : trans('messages.no') }}</li>
+								<li>{{trans('models.fields.radio')}}: {{$dock->get('radio') ? trans('messages.yes') : trans('messages.no') }}</li>
+								<li>{{trans('models.fields.restaurant')}}: {{$dock->get('restaurantes') ? trans('messages.yes') : trans('messages.no') }}</li>
+								<li>{{trans('models.fields.locker-room')}}: {{$dock->get('vestuarios') ? trans('messages.yes') : trans('messages.no') }}</li>
+								<li>{{trans('models.fields.surveillance')}}: {{$dock->get('vigilancia') ? trans('messages.yes') : trans('messages.no') }}</li>
+								<li>{{trans('models.fields.wifi')}}: {{$dock->get('wifi') ? trans('messages.yes') : trans('messages.no') }}</li>
 							</ul>
 						</div>
-						<div class="col-sm-3">
-							<div class="thumbnail"><img src={{$dock->get('image')->getURL()}} class="img-rounded" alt="Image"></div>
-							<p><i class="fa fa-ship"></i> <strong>{{trans('models.port')}}</strong></p>
-							<p> {{$port->get('name')}} ({{$port->get('province')}}) </p>
-							<p><i class="fa fa-user"></i> <strong>{{trans('models.user')}}</strong></p>
-							<p> {{$provider->get('username')}} </p>
+						<div class="col-sm-12">
+							<p><i class="fa fa-file-text-o"></i> <strong>{{trans('models.fields.offer')}}</strong></p>
+							<p> {{$dock->get('oferta')}} </p>
 						</div>
 					</div>
 				</div>
