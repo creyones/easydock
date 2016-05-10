@@ -12,7 +12,7 @@
 			<div class="row">
 				@if (Auth::user()->hasRole('owner') || Auth::user()->hasRole('admin'))
 				<div class="col-sm-12">
-					<p class="lead"><i class="fa fa-eur fa-2x"></i> <span class="text-success"> {{count($providers)}} </span> {{trans('models.providers')}}  <a class="btn btn-default pull-right" href={{route('providers.create')}}>{{trans('views.create_provider')}}</a></p>
+					<p class="lead"><i class="fa fa-building fa-2x"></i> <span class="text-success"> {{count($providers)}} </span> {{trans('models.providers')}}  <a class="btn btn-default pull-right" href={{route('providers.create')}}>{{trans('views.create_provider')}}</a></p>
 				</div>
 				<div class="col-sm-12">
 					<table id="data-table" class="table table-striped table-hover ">

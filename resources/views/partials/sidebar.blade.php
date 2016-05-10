@@ -4,7 +4,7 @@
   <a href={{route('profile')}} class="list-group-item {{ $active === 'profile' ? 'active' : '' }}"><i class="fa fa-user"></i> {{trans('views.profile')}}</a>
   @if (Auth::user()->hasRole('owner') || Auth::user()->hasRole('admin'))
     <a href={{route('users.index')}} class="list-group-item {{ $active === 'users' ? 'active' : '' }}"><i class="fa fa-users"></i> {{trans('views.users')}}</a>
-    <a href={{route('providers.index')}} class="list-group-item {{ $active === 'providers' ? 'active' : '' }}"><i class="fa fa-eur"></i> {{trans('views.providers')}}</a>
+    <a href={{route('providers.index')}} class="list-group-item {{ $active === 'providers' ? 'active' : '' }}"><i class="fa fa-building"></i> {{trans('views.providers')}}</a>
     <a href={{route('ports.index')}} class="list-group-item {{ $active === 'ports' ? 'active' : '' }}"><i class="fa fa-ship"></i> {{trans('views.ports')}}</a>
   @endif
   <a href={{route('docks.index')}} class="list-group-item {{ $active === 'docks' ? 'active' : '' }}"><i class="fa fa-anchor"></i> {{trans('views.docks')}}</a>

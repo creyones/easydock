@@ -24,7 +24,7 @@
 							<h3 class="panel-title">{{trans('views.providers')}}</h3>
 						</div>
 						<div class="panel-body">
-							<p class="lead"><i class="fa fa-eur fa-2x"></i> <span class="text-success"> {{$providers->count()}} </span> {{trans('models.providers')}}</p>
+							<p class="lead"><i class="fa fa-building fa-2x"></i> <span class="text-success"> {{$providers->count()}} </span> {{trans('models.providers')}}</p>
 						</div>
 					</div>
 				</div>
