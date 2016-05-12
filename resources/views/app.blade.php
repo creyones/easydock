@@ -38,12 +38,11 @@
 					<span class="icon-bar"></span>
 					<span class="icon-bar"></span>
 				</button>
-				<a class="navbar-brand" href="#">EasyDock</a>
+				<a class="navbar-brand" rel="home" href="/" title="EasyDock"><img style="max-width:36px; margin-top: -8px;" src="/img/logo-sm.png"></a>
 			</div>
 
 			<div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
 				<ul class="nav navbar-nav">
-					<li><a href="/">{{ trans('views.home') }}</a></li>
 				</ul>
 
 				<ul class="nav navbar-nav navbar-right">
