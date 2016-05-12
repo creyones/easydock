@@ -1,6 +1,9 @@
 /vendor
 /node_modules
 /bootstrap/compiled.php
+public/img/docks
+public/img/ports
+npm-debug.log
 .env
 .env.*.php
 .env.php
