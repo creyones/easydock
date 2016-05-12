@@ -171,7 +171,6 @@
 		</div>
 	</div>
 </div>
-@include('partials.daterange', array('from' => '#from', "until" => "#until", "past" => false))
-@include('partials.daterange', array('from' => '#block-from', "until" => "#block-until", "past" => true ))
+@include('partials.daterange', array('from' => '#from', "until" => "#until", "past" => true))
 @include('partials.fileinput-preview', array('item' => 'image', 'preview' => $dock->get('image')->getURL(), 'caption' => trans('models.fields.image')))
 @endsection

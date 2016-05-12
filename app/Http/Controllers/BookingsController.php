@@ -542,7 +542,7 @@ class BookingsController extends Controller {
 				$intro = trans('emails.user.update-booking-intro');
 				$text = trans('emails.user.update-booking-text');
 
-				/* TODO: enable push
+				/* TODO: enable push */
 				//Send push notification to user
 				$userQuery = $booking->get('userRelation')->getQuery();
 				// Find devices associated with these users
@@ -557,7 +557,7 @@ class BookingsController extends Controller {
 					"data" => array(
 						"alert" => $intro
 					)
-				));*/
+				));
 			}
 
 		}
@@ -567,7 +567,7 @@ class BookingsController extends Controller {
 			$intro = trans('emails.user.delete-booking-intro');
 			$text = trans('emails.user.delete-booking-text');
 
-			/* TODO: enable push
+			/* TODO: enable push */
 			//Send push notification to user
 			$userQuery = $booking->get('userRelation')->getQuery();
 			// Find devices associated with these users
@@ -582,7 +582,7 @@ class BookingsController extends Controller {
 				"data" => array(
 					"alert" => $intro
 				)
-			));*/
+			));
 		}
 
 		$data = ['to' => $to,

@@ -329,7 +329,7 @@ class DocksController extends Controller {
 				if($from->gt($pfrom))
 				{
 					//Remove if possible
-					$this->destroyProducts($dock, $pfrom, $from->subDay());
+					$this->destroyProducts($dock, false, $pfrom, $from->subDay());
 
 				}
 				else if ($from->lt($pfrom))
@@ -346,7 +346,7 @@ class DocksController extends Controller {
 				else if ($until->lt($puntil))
 				{
 					//Remove if possible
-					$this->destroyProducts($dock, $until->addDay(), $puntil);
+					$this->destroyProducts($dock, false, $until->addDay(), $puntil);
 				}
 
 				$dock->set('fechaInicio', createDate($request->get('from')));
@@ -442,7 +442,7 @@ class DocksController extends Controller {
 					$product->set('reservado', false);
 					$product->set('bloqueado', false);
 				}
-				else if ($product->get('confirmado')) {
+				else if ($product->get('confirmado') || $product->get('reservado')) {
 					return redirect()->back()->withErrors(trans('messages.docks.not-unblocked'));
 				}
 				try {
@@ -547,7 +547,7 @@ class DocksController extends Controller {
 				}
 
 				//Destroy related Products
-				$this->destroyProducts($dock);
+				$this->destroyProducts($dock, true);
 
 				//Destroy Port in Parse
 				$dock->destroy();
@@ -659,6 +659,7 @@ class DocksController extends Controller {
 			$product = new ParseObject('Productos');
 			$product->set('confirmado', false);
 			$product->set('reservado', false);
+			$product->set('bloqueado', false);
 			$product->set('precio', $price);
 			$product->set('fecha', $day);
 			$product->getRelation('atraqueRelation')->add($dock);
@@ -672,7 +673,7 @@ class DocksController extends Controller {
 
 	}
 
-	private function destroyProducts($dock, $start = null, $end = null)
+	private function destroyProducts($dock, $force, $start = null, $end = null)
 	{
 
 		$q = new ParseQuery('Productos');
@@ -683,6 +684,9 @@ class DocksController extends Controller {
 		}
 		if ($end) {
 			$q->lessThanOrEqualTo('fecha', $end);
+		}
+		if(!$force){
+			//TODO: Check there are no reservations pending in these dates
 		}
 
 		$products = $q->find();
