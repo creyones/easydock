@@ -9715,6 +9715,9 @@ table.dataTable tbody td {
 .fc-highlight {
   background-color: #f6beb9;
 }
+.navbar {
+  border-radius: 0px;
+}
 
 /*# sourceMappingURL=app.css.map */
 /*# sourceMappingURL=all.css.map */
