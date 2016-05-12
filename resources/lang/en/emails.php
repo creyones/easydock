@@ -19,6 +19,8 @@ return [
 		'update-booking' => 'Booking Updated',
 		'update-booking-intro' => 'A booking you requested has been updated by the owner/manager.',
 		'update-booking-text' => 'Please check in the app that you agree with the changes made to reservation. If you do not agree, please get in contact with the dock owner/manager.',
+		'delete-booking' => 'Canceled Booking',
+		'delete-booking-text' => 'A booking you requested has been canceled. If you want to create a new booking, please proceed by requesting a new one in the app',
 	],
 	'provider' => [
 		'new-booking' => 'New Booking!!!',

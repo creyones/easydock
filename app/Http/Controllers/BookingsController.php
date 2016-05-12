@@ -305,7 +305,7 @@ class BookingsController extends Controller {
 				}
 
 				return redirect('bookings')->with([
-					'flash_message' => trans('messages.dock_updated'),
+					'flash_message' => trans('messages.bookings.updated'),
 					'flash_message_important' => true
 					]);
 
@@ -343,14 +343,14 @@ class BookingsController extends Controller {
 				//Free related Products
 				$this->freeProducts($booking, $from, $until);
 
-				//Notify provider
-				$this->notify($booking, 'delete', 'provider');
+				//Notify user
+				$this->notify($booking, 'delete', 'user');
 
-				//Destroy Port in Parse
+				//Destroy Booking in Parse
 				$booking->destroy();
 
 				return redirect('bookings')->with([
-					'flash_message' => trans('messages.booking_deleted'),
+					'flash_message' => trans('messages.bookings.deleted'),
 					'flash_message_important' => true
 					]);
 
@@ -562,7 +562,27 @@ class BookingsController extends Controller {
 
 		}
 		elseif ($action === 'delete') {
+			$to = $user->get('email');
+			$contact = $provider->get('email');
+			$intro = trans('emails.user.delete-booking-intro');
+			$text = trans('emails.user.delete-booking-text');
 
+			/* TODO: enable push
+			//Send push notification to user
+			$userQuery = $booking->get('userRelation')->getQuery();
+			// Find devices associated with these users
+			$pushQuery = ParseInstallation::query();
+			$pushQuery->matchesQuery('user', $userQuery);
+			$pushQuery->equalTo('deviceType', 'ios');
+
+			//dd($pushQuery);
+			// Send push notification to query
+			ParsePush::send(array(
+				"where" => $pushQuery,
+				"data" => array(
+					"alert" => $intro
+				)
+			));*/
 		}
 
 		$data = ['to' => $to,

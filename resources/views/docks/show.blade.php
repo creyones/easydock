@@ -205,6 +205,16 @@
 					backgroundColor: '#e74c3c',
         };
 				$('#calendar').fullCalendar( 'renderEvent', newEvent , 'stick');
+			@else
+			var newEvent = {
+				start: moment('{{$product->get("fecha")->format("d/m/Y")}}', 'DD/MM/YYYY'),
+				allDay: true,
+				title: '{{trans("models.fields.available")}}',
+				rendering: 'background',
+				color: '#ddd',
+				backgroundColor: '#ddd',
+			};
+			$('#calendar').fullCalendar( 'renderEvent', newEvent , 'stick');
 			@endif
 		@endforeach
 	});

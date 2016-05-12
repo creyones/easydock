@@ -19,6 +19,8 @@ return [
 		'update-booking' => 'Reserva Actualizada',
 		'update-booking-intro' => 'La reserva que habías realizado ha sido actualizada por el propietario/gestor del atraque.',
 		'update-booking-text' => 'Por favor comprueba los cambios realizados en la reserva en la app de EasyDock. Si tienes alguna duda, por favor ponte en contacto con el propietario/gestor del atraque.',
+		'delete-booking' => 'Reserva Cancelada',
+		'delete-booking-text' => 'Una reserva que habías solicitado ha sido cancelada. Si quieres hacer otra reserva, por favor accede a EasyDock y solícitala.',
 	],
 	'provider' => [
 		'new-booking' => 'Nueva reserva!!!',
