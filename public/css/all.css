@@ -2957,7 +2957,7 @@ div.table-responsive > div.dataTables_wrapper > div.row > div[class^="col-"]:las
 /*!
  * @copyright Copyright &copy; Kartik Visweswaran, Krajee.com, 2014 - 2015
  * @package bootstrap-fileinput
- * @version 4.3.1
+ * @version 4.3.2
  *
  * File input styling for Bootstrap 3.0
  * Built for Yii Framework 2.0
@@ -9708,6 +9708,12 @@ table.dataTable tbody td {
 }
 .fc-left h2 {
   font-size: 20px;
+}
+.fc-bg .fc-today {
+  background-color: #b6daf2 !important;
+}
+.fc-highlight {
+  background-color: #f6beb9;
 }
 
 /*# sourceMappingURL=app.css.map */

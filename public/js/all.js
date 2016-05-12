@@ -17587,7 +17587,7 @@ return DataTable;
 }));
 /*!
  * @copyright Copyright &copy; Kartik Visweswaran, Krajee.com, 2014 - 2015
- * @version 4.3.1
+ * @version 4.3.2
  *
  * File input styled for Bootstrap 3.0 that utilizes HTML5 File Input's advanced features including the FileReader API.
  *
@@ -17729,7 +17729,7 @@ return DataTable;
                 data.config[index] = config;
                 data.tags[index] = tags;
             } else {
-                index = content.length;
+                index = content.length - 1;
                 data.content = content;
                 data.config = config;
                 data.tags = tags;
@@ -17791,10 +17791,12 @@ return DataTable;
             if (chk === 1) {
                 previewCache.data[id].content = [];
                 previewCache.data[id].config = [];
+                previewCache.data[id].tags = [];
                 return;
             }
             previewCache.data[id].content[index] = null;
             previewCache.data[id].config[index] = null;
+            previewCache.data[id].tags[index] = null;
         },
         out: function (id) {
             var html = '', data = previewCache.data[id], caption, len = previewCache.count(id, true);
@@ -20349,6 +20351,7 @@ return DataTable;
         }
     });
 }));
+
 /*!
  * FileInput Spanish Translations
  *
