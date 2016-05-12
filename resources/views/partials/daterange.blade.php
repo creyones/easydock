@@ -8,8 +8,8 @@
       format: "dd/mm/yyyy",
 			@if ($past != true)
       startDate: "+1d",
-      endDate: "+365d",
 			@endif
+      endDate: "+365d",
 
     })
 		.on('changeDate', function(selected){
@@ -24,8 +24,8 @@
       format: "dd/mm/yyyy",
 			@if ($past != true)
       startDate: "+1d",
-      endDate: "+365d",
 			@endif
+      endDate: "+365d",
     });
 
 	});
