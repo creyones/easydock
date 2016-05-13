@@ -11,6 +11,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Input;
 //use Illuminate\Support\Facades\Request;
 use Intervention\Image\Facades\Image;
+use Storage;
 
 use Parse\ParseClient;
 use Parse\ParseObject;
@@ -139,7 +140,7 @@ class DocksController extends Controller {
 		//Create Parse Dock
 		$dock = new ParseObject('Atraques');
 		//dd($request);
-		$file = $request->file('image');
+		/*$file = $request->file('image');
 
 		if ($file and $file->isValid()){
 			//Original Image
@@ -154,22 +155,24 @@ class DocksController extends Controller {
 			$image = ParseFile::createFromFile($imagepath, basename($imagepath));
 			$thumbnail = ParseFile::createFromFile($thumbpath, basename($thumbpath));
 
-			// Carbonize dates
-			$start = createDate($request->get('from'));
-			$end = createDate($request->get('until'));
+
 			$dock->set('image', $image);
 
 		}
 		else {
 			return redirect()->back()->withErrors(trans('messages.docks.not-found'));
-		}
+		}*/
+		// Carbonize dates
+		$start = createDate($request->get('from'));
+		$end = createDate($request->get('until'));
+		// Set fields
 		$dock->set('name', $request->get('name'));
 		$dock->set('detailText', $request->get('details'));
 		$dock->set('codigo', $request->get('code'));
 		$dock->set('fechaInicio', $start);
 		$dock->set('fechaFinal', $end);
 		$dock->set('precio', floatval($request->get('price')));
-		$dock->set('thumbnail', $thumbnail);
+
 		$dock->set('available', true);
 		$dock->set('manga', floatval($request->get('beam')));
 		$dock->set('eslora', floatval($request->get('length')));
@@ -197,11 +200,27 @@ class DocksController extends Controller {
 		$dock->set('wifi', $port->get('wifi'));
 		//Offer text
 		$dock->set('oferta', $port->get('oferta'));
+		//Set default image
+		$plan = $port->get('plano');
+		if ($plan) {
+			$dock->set('image', $plan);
+			$imagename = $plan->getName();
+			//file_get_contents($request->file('avatar')->getRealPath())
+			//$imagepath = $port->get('plano')->getURL();
+			//Storage::put($port->get('plano')->getData());
+			//$imagepath = storage_path() . $imagename;
+			$imagepath = public_path('img/docks/') . $imagename;
+			file_put_contents($imagepath, $port->get('plano')->getData());
+			$thumbpath = $this->fitImage($imagepath, 240, 240, 'thumb');
+			$thumbnail = ParseFile::createFromFile($thumbpath, basename($thumbpath));
+			$dock->set('thumbnail', $thumbnail);
+		}
 
 		try {
 
-			$image->save();
-			$thumbnail->save();
+			if($thumbnail) {
+				$thumbnail->save();
+			}
 			$dock->save();
 
 			//Create related products

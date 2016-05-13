@@ -61,6 +61,7 @@
 						</div>
 					</div>
 					<hr/>
+					@if (false)
 					<div class="form-group">
 						{!!Form::Label('image', trans('models.fields.image'), ['class'=>'col-sm-2 control-label']) !!}
 						<div class="col-sm-8">
@@ -68,6 +69,7 @@
 						</div>
 					</div>
 					<hr/>
+					@endif
 					<div class="form-group">
 						{!!Form::Label('price', trans('models.fields.price') . " (". trans('messages.price-per-day') .")", ['class'=>'col-sm-2 control-label']) !!}
 						<div class="col-sm-8">
