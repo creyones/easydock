@@ -22,6 +22,7 @@ return [
 	'false' => 'False',
 	'confirmed' => 'Confirmed',
 	'canceled' => 'Canceled',
+	'access-forbidden' => 'You do not have access to this resource. Please, proceed to home page.',
 	'users' => [
 		'created' => 'The user has been succesfully created.',
 		'updated' => 'The user has been succesfully updated.',

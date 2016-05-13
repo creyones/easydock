@@ -48,7 +48,7 @@
 
 				@else
 				<div class="col-sm-8 col-sm-offset-2">
-					<p class="lead">{{trans('messages.accessforbidden')}}</p>
+					<p class="lead">{{trans('messages.access-forbidden')}}</p>
 				</div>
 				@endif
 				<!-- End Main Content -->
