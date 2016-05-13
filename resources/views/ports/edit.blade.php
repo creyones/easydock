@@ -10,7 +10,7 @@
 			<!-- Main Content -->
 			<div class="row">
 				@include('errors.list')
-				@if (Auth::user()->hasRole('owner') || Auth::user()->hasRole('admin'))
+				@if (Auth::user()->hasRole('owner') || Auth::user()->hasRole('admin') || Auth::user()->hasRole('provider'))
 				<div class="col-sm-12">
 					<p class="lead"><i class="fa fa-edit fa-lg"></i> {{trans('views.edit_port')}}</p></li>
 					{!! Form::model($port, ['method'=> 'PATCH', 'action' => ['PortsController@update', $port->getObjectId()], 'class' =>'form-horizontal','role'=>'form', 'files' => true]) !!}
@@ -35,29 +35,49 @@
 					<div class="form-group">
 						{!!Form::Label('name', trans('models.fields.name'), ['class'=>'col-sm-2 control-label']) !!}
 						<div class="col-sm-8">
-							{!! Form::text('name', $port->get('name'), ['class'=>'form-control']) !!}
+							@if (Auth::user()->hasRole('provider'))
+								{!! Form::text('name', $port->get('name'), ['class'=>'form-control', 'disabled' => 'disabled']) !!}
+							@else
+								{!! Form::text('name', $port->get('name'), ['class'=>'form-control']) !!}
+							@endif
 						</div>
 					</div>
 					<div class="form-group">
 						{!!Form::Label('province', trans('models.fields.province'), ['class'=>'col-sm-2 control-label']) !!}
 						<div class="col-sm-4">
-							{!! Form::select('provinces', $provinces, $port->get('province'), ['class'=>'form-control']) !!}
+							@if (Auth::user()->hasRole('provider'))
+								{!! Form::select('provinces', $provinces, $port->get('province'), ['class'=>'form-control', 'disabled' => 'disabled']) !!}
+							@else
+								{!! Form::select('provinces', $provinces, $port->get('province'), ['class'=>'form-control']) !!}
+							@endif
 						</div>
 					</div>
 					<div class="form-group">
 						{!!Form::Label('latitude', trans('models.fields.latitude'), ['class'=>'col-sm-2 control-label']) !!}
 						<div class="col-sm-3">
-							{!! Form::text('latitude', $port->get('latitude'), ['class'=>'form-control']) !!}
+							@if (Auth::user()->hasRole('provider'))
+								{!! Form::text('latitude', $port->get('latitude'), ['class'=>'form-control', 'disabled' => 'disabled']) !!}
+							@else
+								{!! Form::text('latitude', $port->get('latitude'), ['class'=>'form-control']) !!}
+							@endif
 						</div>
 						{!!Form::Label('longitude', trans('models.fields.longitude'), ['class'=>'col-sm-2 control-label']) !!}
 						<div class="col-sm-3">
-							{!! Form::text('longitude', $port->get('longitude'), ['class'=>'form-control']) !!}
+							@if (Auth::user()->hasRole('provider'))
+								{!! Form::text('longitude', $port->get('longitude'), ['class'=>'form-control', 'disabled' => 'disabled']) !!}
+							@else
+								{!! Form::text('longitude', $port->get('longitude'), ['class'=>'form-control']) !!}
+							@endif
 						</div>
 					</div>
 					<div class="form-group">
 						{!!Form::Label('premium', trans('models.fields.premium'), ['class'=>'col-sm-2 control-label']) !!}
 						<div class="col-sm-4">
-							{!!Form::select('premium', [trans('messages.no'), trans('messages.yes')] , $port->get('premium') ? trans('messages.yes') : trans('messages.no'), ['class'=>'form-control']) !!}
+							@if (Auth::user()->hasRole('provider'))
+								{!! Form::select('premium', [trans('messages.no'), trans('messages.yes')] , $port->get('premium') ? trans('messages.yes') : trans('messages.no'), ['class'=>'form-control', 'disabled' => 'disabled']) !!}
+							@else
+								{!! Form::select('premium', [trans('messages.no'), trans('messages.yes')] , $port->get('premium') ? trans('messages.yes') : trans('messages.no'), ['class'=>'form-control']) !!}
+							@endif
 						</div>
 					</div>
 					<div class="form-group">

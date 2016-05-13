@@ -10,9 +10,13 @@
 			@include('partials.flash')
 			<!-- Main Content -->
 			<div class="row">
-				@if (Auth::user()->hasRole('owner') || Auth::user()->hasRole('admin'))
+				@if (Auth::user()->hasRole('owner') || Auth::user()->hasRole('admin') || Auth::user()->hasRole('provider'))
 				<div class="col-sm-12">
-					<p class="lead"><i class="fa fa-ship fa-2x"></i> <span class="text-success"> {{count($ports)}} </span> {{trans('models.ports')}}  <a class="btn btn-default pull-right" href={{route('ports.create')}}>{{trans('views.create_port')}}</a></p>
+					<p class="lead"><i class="fa fa-ship fa-2x"></i> <span class="text-success"> {{count($ports)}} </span> {{trans('models.ports')}}
+					@if (!Auth::user()->hasRole('provider'))
+						<a class="btn btn-default pull-right" href={{route('ports.create')}}>{{trans('views.create_port')}}</a>
+					@endif
+					</p>
 				</div>
 				<div class="col-sm-12">
 					<table id="data-table" class="table table-striped table-hover ">
@@ -34,7 +38,9 @@
 									<ul class="list-inline">
 										<li><a class="btn btn-xs btn-success" href={{ route('ports.show', array('id' => $port->getObjectId())) }}><i class="fa fa-eye"></i></a></li>
 										<li><a class="btn btn-xs btn-primary" href={{ route('ports.edit', array('id' => $port->getObjectId())) }}><i class="fa fa-pencil-square-o"></i></a></li>
-										<li><button type="button" class="btn btn-xs btn-danger" data-toggle="modal" data-target="#deleteModal" data-id={{$port->getObjectId()}} data-whatever={{ route('ports.destroy', array('id' => $port->getObjectId())) }}><i class="fa fa-trash-o"></i></button></li>
+										@if (!Auth::user()->hasRole('provider'))
+											<li><button type="button" class="btn btn-xs btn-danger" data-toggle="modal" data-target="#deleteModal" data-id={{$port->getObjectId()}} data-whatever={{ route('ports.destroy', array('id' => $port->getObjectId())) }}><i class="fa fa-trash-o"></i></button></li>
+										@endif
 									</ul>
 								</td>
 							</tr>

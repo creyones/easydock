@@ -60,6 +60,7 @@ class ProfileController extends Controller {
 		$user->address = $request->get('address');
 		$user->city = $request->get('city');
 		$user->postalcode = $request->get('postalcode');
+		$user->port = $request->get('port');
 		$user->save();
 
 		return view('pages.profile', compact('user'))->with([

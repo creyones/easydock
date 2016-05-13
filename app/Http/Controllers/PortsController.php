@@ -47,6 +47,13 @@ class PortsController extends Controller {
 
 			return view('ports.index', compact('ports'));
 		}
+		else if($current_user->hasRole('provider')){
+			//Query provider
+			$provider = $this->getRelatedProvider();
+			$ports = $provider->get('puertoRelation')->getQuery()->find();
+
+			return view('ports.index', compact('ports'));
+		}
 		else
 		{
 			return view('ports.index');
@@ -57,7 +64,7 @@ class PortsController extends Controller {
 	{
 		$current_user = Auth::user();
 
-		if ($current_user->hasRole('admin') || $current_user->hasRole('owner')){
+		if ($current_user->hasRole('admin') || $current_user->hasRole('owner') || $current_user->hasRole('provider')){
 
 			//Query Port
 			$query = new ParseQuery('Puertos');
@@ -153,7 +160,7 @@ class PortsController extends Controller {
 	{
 		$current_user = Auth::user();
 
-		if ($current_user->hasRole('admin') || $current_user->hasRole('owner')){
+		if ($current_user->hasRole('admin') || $current_user->hasRole('owner') || $current_user->hasRole('provider')){
 
 			//Query Port
 			$query = new ParseQuery('Puertos');
@@ -174,7 +181,7 @@ class PortsController extends Controller {
 	{
 		$current_user = Auth::user();
 
-		if ($current_user->hasRole('admin') || $current_user->hasRole('owner')){
+		if ($current_user->hasRole('admin') || $current_user->hasRole('owner') || $current_user->hasRole('provider')){
 			//Query Port
 			$query = new ParseQuery('Puertos');
 			//Get Port by id
@@ -306,6 +313,21 @@ class PortsController extends Controller {
 
 		return $output;
 
+	}
+
+	private function getRelatedProvider($name = "current") {
+		// Check if current user
+		if ($name == null || $name == "current") {
+			$name = Auth::user()->username;
+		}
+
+		$query = new ParseQuery('Vendedores');
+		$query->equalTo("username", $name);
+
+		$providers = $query->find();
+		$provider = $providers[0];
+
+		return $provider;
 	}
 
 }

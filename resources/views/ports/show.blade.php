@@ -8,7 +8,7 @@
 		</div>
 		<div class="col-sm-9 col-md-10">
 			<!-- Main Content -->
-			@if (Auth::user()->hasRole('owner') || Auth::user()->hasRole('admin'))
+			@if (Auth::user()->hasRole('owner') || Auth::user()->hasRole('admin') || Auth::user()->hasRole('provider'))
 			@include('errors.list')
 			@if(!$errors->any())
 			<div class="panel panel-default">

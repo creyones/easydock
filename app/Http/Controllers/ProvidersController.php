@@ -119,6 +119,7 @@ class ProvidersController extends Controller {
 		$profile->firstname = $request->get('firstname');
 		$profile->lastname 	= $request->get('lastname');
 		$profile->username	= $request->get('username');
+		$profile->port			= $request->get('port');
 		$profile->email     = $request->get('email');
 		$profile->address  	= $request->get('address');
 		$profile->city   		= $request->get('city');

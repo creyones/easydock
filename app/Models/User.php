@@ -36,7 +36,8 @@ class User extends Model implements AuthenticatableContract, CanResetPasswordCon
 													'city',
 													'postalcode',
 													'mobile',
-													'phone'];
+													'phone',
+													'port'];
 
 	/**
 	 * The attributes excluded from the model's JSON form.
